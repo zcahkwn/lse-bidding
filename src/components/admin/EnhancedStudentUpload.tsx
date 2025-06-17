@@ -110,10 +110,6 @@ const EnhancedStudentUpload = ({ classId, onUpload }: EnhancedStudentUploadProps
 
   return (
     <Card>
-      <CardHeader className="bg-gradient-to-r from-red-50 to-orange-50 border-b">
-        <CardTitle className="text-xl font-heading flex items-center gap-3 text-red-900">
-        </CardTitle>
-      </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="csvFile">Upload CSV File</Label>
@@ -125,12 +121,11 @@ const EnhancedStudentUpload = ({ classId, onUpload }: EnhancedStudentUploadProps
             disabled={isUploading}
           />
           <div className="text-sm text-muted-foreground space-y-1">
-            <p><strong>⚠️ REQUIRED COLUMNS:</strong></p>
+            <p><strong>REQUIRED COLUMNS:</strong></p>
             <p>• <strong>Name</strong> - Student's full name</p>
             <p>• <strong>Email</strong> - Student's email address</p>
             <p>• <strong>Student Number</strong> - Student's ID number (required for login)</p>
             <p className="text-amber-600 font-medium">⚠️ All three fields are required for student login</p>
-            <p>• Maximum file size: 5MB</p>
             <p>• Supported format: CSV (.csv)</p>
           </div>
         </div>
@@ -198,7 +193,7 @@ const EnhancedStudentUpload = ({ classId, onUpload }: EnhancedStudentUploadProps
 
         {/* CSV Template Download */}
         <div className="border-t pt-4">
-          <h4 className="font-medium text-sm mb-2">Need a template?</h4>
+          <h4 className="font-medium text-sm mb-2">Template:</h4>
           <Button 
             variant="outline" 
             size="sm"

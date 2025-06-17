@@ -133,15 +133,6 @@ const Students = ({ currentClass, onUpdateStudents }: StudentsProps) => {
                     </ul>
                   </div>
                   
-                  <div>
-                    <h4 className="font-medium mb-2">Real-time Features:</h4>
-                    <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                      <li>Live token status updates</li>
-                      <li>Instant bid notifications</li>
-                      <li>Automatic student list refresh</li>
-                      <li>Real-time statistics tracking</li>
-                    </ul>
-                  </div>
                 </div>
               </CardContent>
             </Card>
