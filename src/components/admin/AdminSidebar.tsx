@@ -1,18 +1,9 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { ClassConfig } from "@/types";
 import { cn } from "@/lib/utils";
 import { 
-  Users, 
-  Coins, 
-  Calendar, 
-  Settings, 
   Plus,
-  ChevronRight,
   BookOpen
 } from "lucide-react";
 
@@ -31,12 +22,10 @@ const AdminSidebar = ({
   onCreateClass,
   isCollapsed = false 
 }: AdminSidebarProps) => {
-  const [hoveredClass, setHoveredClass] = useState<string | null>(null);
-
   return (
     <div className={cn(
       "fixed left-0 top-16 h-[calc(100vh-64px)] bg-white border-r border-gray-200 shadow-sm transition-all duration-300 z-40",
-      isCollapsed ? "w-16" : "w-80"
+      isCollapsed ? "w-16" : "w-64"
     )}>
       <div className="flex flex-col h-full">
         {/* Header */}
@@ -59,8 +48,8 @@ const AdminSidebar = ({
         </div>
 
         {/* Classes List */}
-        <ScrollArea className="flex-1 p-2">
-          <div className="space-y-2">
+        <ScrollArea className="flex-1 p-3">
+          <div className="space-y-1">
             {classes.length === 0 ? (
               <div className={cn(
                 "text-center py-8",
@@ -84,120 +73,48 @@ const AdminSidebar = ({
               </div>
             ) : (
               classes.map((classItem) => (
-                <Card
+                <button
                   key={classItem.id}
                   className={cn(
-                    "cursor-pointer transition-all duration-200 hover:shadow-md",
+                    "w-full text-left px-3 py-2 rounded-md transition-all duration-200 hover:bg-gray-100",
                     currentClass?.id === classItem.id 
-                      ? "border-academy-blue bg-academy-blue/5 shadow-sm" 
-                      : "border-gray-200 hover:border-gray-300",
-                    isCollapsed && "p-2"
+                      ? "bg-academy-blue text-white hover:bg-academy-blue/90" 
+                      : "text-gray-700 hover:text-gray-900",
+                    isCollapsed && "px-2 py-3"
                   )}
                   onClick={() => onSelectClass(classItem.id)}
-                  onMouseEnter={() => setHoveredClass(classItem.id)}
-                  onMouseLeave={() => setHoveredClass(null)}
                 >
                   {isCollapsed ? (
-                    <div className="flex items-center justify-center p-2">
-                      <div className="w-8 h-8 rounded-full bg-academy-blue/10 flex items-center justify-center">
-                        <span className="text-sm font-semibold text-academy-blue">
-                          {classItem.className.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
+                    <div className="flex items-center justify-center">
+                      <span className="text-sm font-semibold">
+                        {classItem.className.charAt(0).toUpperCase()}
+                      </span>
                     </div>
                   ) : (
-                    <>
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-base font-semibold text-gray-900 truncate">
-                            {classItem.className}
-                          </CardTitle>
-                          {currentClass?.id === classItem.id && (
-                            <ChevronRight className="w-4 h-4 text-academy-blue" />
-                          )}
-                        </div>
-                        <p className="text-xs text-gray-500 truncate">
-                          Password: {classItem.password}
-                        </p>
-                      </CardHeader>
-                      
-                      <CardContent className="pt-0 space-y-3">
-                        {/* Quick Stats */}
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="flex items-center space-x-2">
-                            <Users className="w-4 h-4 text-gray-400" />
-                            <div>
-                              <p className="text-xs text-gray-500">Students</p>
-                              <p className="text-sm font-medium">{classItem.students.length}</p>
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center space-x-2">
-                            <Coins className="w-4 h-4 text-green-500" />
-                            <div>
-                              <p className="text-xs text-gray-500">Available</p>
-                              <p className="text-sm font-medium text-green-600">
-                                {classItem.students.filter(s => !s.hasUsedToken).length}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        <Separator />
-
-                        {/* Additional Info */}
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-gray-500">Capacity:</span>
-                            <Badge variant="outline" className="text-xs">
-                              {classItem.capacity}
-                            </Badge>
-                          </div>
-                          
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-gray-500">Opportunities:</span>
-                            <Badge variant="outline" className="text-xs">
-                              {classItem.bidOpportunities?.length || 0}
-                            </Badge>
-                          </div>
-                          
-                          {classItem.bidders.length > 0 && (
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-gray-500">Active Bidders:</span>
-                              <Badge className="text-xs bg-academy-blue">
-                                {classItem.bidders.length}
-                              </Badge>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Status Indicator */}
-                        <div className="pt-2">
-                          {classItem.selectedStudents?.length > 0 ? (
-                            <Badge className="w-full justify-center bg-green-500 text-xs">
-                              Selection Complete
-                            </Badge>
-                          ) : classItem.bidders.length > 0 ? (
-                            <Badge variant="secondary" className="w-full justify-center text-xs">
-                              Bidding Active
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="w-full justify-center text-xs">
-                              Ready for Bidding
-                            </Badge>
-                          )}
-                        </div>
-                      </CardContent>
-                    </>
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium truncate">
+                        {classItem.className}
+                      </span>
+                      {classItem.bidders.length > 0 && (
+                        <span className={cn(
+                          "text-xs px-2 py-1 rounded-full",
+                          currentClass?.id === classItem.id
+                            ? "bg-white/20 text-white"
+                            : "bg-academy-blue text-white"
+                        )}>
+                          {classItem.bidders.length}
+                        </span>
+                      )}
+                    </div>
                   )}
-                </Card>
+                </button>
               ))
             )}
           </div>
         </ScrollArea>
 
         {/* Footer */}
-        {!isCollapsed && (
+        {!isCollapsed && classes.length > 0 && (
           <div className="p-4 border-t border-gray-100">
             <div className="text-xs text-gray-500 text-center">
               {classes.length} {classes.length === 1 ? 'class' : 'classes'} total

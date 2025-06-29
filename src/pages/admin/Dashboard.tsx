@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatDate, getBidOpportunityStatus } from "@/utils/dates";
 import EditBidOpportunityDialog from "@/components/admin/EditBidOpportunityDialog";
 import BidOpportunityManager from "@/components/admin/BidOpportunityManager";
-import { Trash2, AlertTriangle } from "lucide-react";
+import { Trash2, AlertTriangle, Users, Coins, Calendar, Settings } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -154,6 +154,107 @@ const Dashboard = ({
           </Button>
         </div>
       </div>
+
+      {/* Class Information Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Students</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{currentClass.students.length}</div>
+            <p className="text-xs text-muted-foreground">
+              Total enrolled
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Available Tokens</CardTitle>
+            <Coins className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              {currentClass.students.filter(s => !s.hasUsedToken).length}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Ready to bid
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Bidders</CardTitle>
+            <Users className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">
+              {currentClass.bidders.length}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Have placed bids
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Capacity</CardTitle>
+            <Settings className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{currentClass.capacity}</div>
+            <p className="text-xs text-muted-foreground">
+              Max winners
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Class Details Card */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Class Details</CardTitle>
+          <CardDescription>
+            Configuration and settings for {currentClass.className}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium text-gray-500">Class Name</Label>
+                <p className="text-lg font-semibold">{currentClass.className}</p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-500">Class Password</Label>
+                <p className="text-lg font-mono bg-gray-100 px-3 py-1 rounded">{currentClass.password}</p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-500">Reward Title</Label>
+                <p className="text-lg">{currentClass.rewardTitle}</p>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium text-gray-500">Reward Description</Label>
+                <p className="text-sm text-gray-700">{currentClass.rewardDescription}</p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-500">Bid Opportunities</Label>
+                <p className="text-lg font-semibold">{currentClass.bidOpportunities?.length || 0}</p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-500">Selected Students</Label>
+                <p className="text-lg font-semibold">{currentClass.selectedStudents?.length || 0}</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
       
       <Tabs defaultValue="opportunities" className="space-y-6">
         <TabsList>
