@@ -193,9 +193,8 @@ const EditBidOpportunityDialog = ({
                   type="number"
                   value={capacity}
                   onChange={handleCapacityChange}
-                  placeholder="0"
                   disabled={isSaving}
-                />
+                />                
                 <span className="text-sm text-muted-foreground">students</span>
               </div>
             </div>
