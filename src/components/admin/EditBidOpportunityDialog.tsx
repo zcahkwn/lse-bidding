@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { format, addDays } from "date-fns";
 import { BidOpportunity, ClassConfig } from "@/types";
 import { formatDate } from "@/utils/dates";
-import { updateBidOpportunity, updateClass } from "@/lib/classService";
+import { updateBidOpportunity } from "@/lib/classService";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
@@ -37,8 +37,6 @@ const EditBidOpportunityDialog = ({
     opportunity ? addDays(new Date(opportunity.date), -7) : undefined
   );
   const [capacity, setCapacity] = useState(opportunity?.capacity || currentClass?.capacity || 7);
-  const [rewardTitle, setRewardTitle] = useState(currentClass?.rewardTitle || "");
-  const [rewardDescription, setRewardDescription] = useState(currentClass?.rewardDescription || "");
   const [isSaving, setIsSaving] = useState(false);
   
   const { toast } = useToast();
@@ -59,14 +57,6 @@ const EditBidOpportunityDialog = ({
         capacity
       });
 
-      // Update the class configuration in the database
-      await updateClass(currentClass.id, {
-        name: currentClass.className, // Keep existing name
-        capacity: currentClass.capacity, // Keep existing default capacity
-        // Note: rewardTitle and rewardDescription are not stored in the database
-        // They are hardcoded in the application
-      });
-
       // Create updated objects for local state
       const updatedOpportunity: BidOpportunity = {
         ...opportunity,
@@ -78,9 +68,7 @@ const EditBidOpportunityDialog = ({
       };
 
       const updatedClass: Partial<ClassConfig> = {
-        rewardTitle,
-        rewardDescription,
-        capacity: currentClass.capacity // Keep the class default capacity unchanged
+        // Don't update class-level settings, just pass empty object
       };
       
       // Update local state

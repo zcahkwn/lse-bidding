@@ -245,7 +245,8 @@ const Index = () => {
         description: updatedOpportunity.description,
         event_date: updatedOpportunity.date,
         opens_at: updatedOpportunity.bidOpenDate,
-        closes_at: updatedOpportunity.date
+        closes_at: updatedOpportunity.date,
+        capacity: updatedOpportunity.capacity
       });
 
       // Update local state
