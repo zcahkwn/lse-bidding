@@ -41,6 +41,15 @@ const EditBidOpportunityDialog = ({
   
   const { toast } = useToast();
   
+  const handleCapacityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value, 10);
+    if (!isNaN(value) && value >= 0) {
+      setCapacity(value);
+    } else if (e.target.value === "") {
+      setCapacity(0);
+    }
+  };
+  
   const handleSave = async () => {
     if (!opportunity || !date || !biddingOpenDate || !currentClass || !capacity) return;
     
