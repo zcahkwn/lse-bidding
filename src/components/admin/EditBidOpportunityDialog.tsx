@@ -182,10 +182,9 @@ const EditBidOpportunityDialog = ({
                 <Input
                   id="capacity"
                   type="number"
-                  min={1}
-                  max={100}
                   value={capacity}
-                  onChange={(e) => setCapacity(parseInt(e.target.value) || 1)}
+                  onChange={handleCapacityChange}
+                  placeholder="0"
                   disabled={isSaving}
                 />
                 <span className="text-sm text-muted-foreground">students</span>
