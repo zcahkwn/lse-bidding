@@ -835,17 +835,7 @@ const Index = () => {
             </TabsContent>
           </Tabs>
 
-          {/* Information about the new system */}
-          <div className="mt-8 max-w-2xl mx-auto">
-            <Alert>
-              <Info className="h-4 w-4" />
-              <AlertDescription>
-                <strong>What's New:</strong> Students can now log in with just their email and student number. 
-                If you're enrolled in multiple classes, you'll be able to choose which one to access and 
-                switch between them from your dashboard.
-              </AlertDescription>
-            </Alert>
-          </div>
+          
         </div>
       </div>
       
