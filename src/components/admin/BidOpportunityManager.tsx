@@ -158,6 +158,7 @@ const BidOpportunityManager = ({
               <TableHeader>
                 <TableRow>
                   <TableHead>Title</TableHead>
+                  <TableHead>Capacity</TableHead>
                   <TableHead>Event Date</TableHead>
                   <TableHead>Bidding Opens</TableHead>
                   <TableHead>Status</TableHead>
@@ -169,6 +170,7 @@ const BidOpportunityManager = ({
                 {currentClass.bidOpportunities.map((opportunity) => (
                   <TableRow key={opportunity.id}>
                     <TableCell className="font-medium">{opportunity.title}</TableCell>
+                    <TableCell>{opportunity.capacity || currentClass.capacity}</TableCell>
                     <TableCell>{formatDate(opportunity.date)}</TableCell>
                     <TableCell>
                       {opportunity.bidOpenDate ? formatDate(opportunity.bidOpenDate) : "1 week before"}

@@ -308,6 +308,7 @@ export const createBidOpportunity = async (
       bidOpenDate: opportunityRecord.opens_at,
       title: opportunityData.title,
       description: opportunityRecord.description,
+      capacity: opportunityRecord.capacity || 7,
       bidders: [],
       selectedStudents: [],
       isOpen: false
@@ -377,6 +378,7 @@ export const fetchClasses = async (): Promise<ClassConfig[]> => {
         bidOpenDate: opp.opens_at,
         title: `Bidding Opportunity - ${new Date(opp.event_date).toLocaleDateString()}`,
         description: opp.description,
+        capacity: opp.capacity || classRecord.capacity_default || 7,
         bidders: [], // This would need to be fetched from bids table
         selectedStudents: [], // This would need to be fetched from selections table
         isOpen: opp.status === 'open'
@@ -449,7 +451,7 @@ export const updateBidOpportunity = async (
       updateData.closes_at = updates.event_date
     }
     if (updates.opens_at) updateData.opens_at = updates.opens_at
-    if (updates.capacity) updateData.capacity = updates.capacity
+    if (updates.capacity !== undefined) updateData.capacity = updates.capacity
 
     const { error } = await supabase
       .from('opportunities')

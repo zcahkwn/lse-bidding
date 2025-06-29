@@ -19,6 +19,7 @@ export interface BidOpportunity {
   bidOpenDate?: string; // ISO date string for when bidding opens
   title: string;
   description: string;
+  capacity?: number; // Added capacity field for each opportunity
   bidders: Student[];
   selectedStudents: Student[];
   isOpen: boolean;
