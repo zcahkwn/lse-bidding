@@ -446,8 +446,8 @@ export const updateBidOpportunity = async (
     
     const updateData: any = {}
     
-    // FIXED: Now properly handling the title field
-    if (updates.title) updateData.title = updates.title
+    // REMOVED: title field is not stored in the database, it's a derived field
+    // The title is computed from the event_date in the frontend
     if (updates.description) updateData.description = updates.description
     if (updates.event_date) {
       updateData.event_date = new Date(updates.event_date).toISOString().split('T')[0]
