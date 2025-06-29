@@ -78,6 +78,9 @@ const StudentDashboard = () => {
   const studentBidOpportunity = bidOpportunities.find(
     opportunity => opportunity.bidders && opportunity.bidders.some(bidder => bidder.id === student.id)
   );
+
+  // Find the opportunity where the student used their token (for students who used token but may not have bid)
+  const tokenUsedOpportunity = studentBidOpportunity || (student.hasUsedToken ? bidOpportunities[0] : null);
   
   const handleBidSubmitted = (bidId: string, updatedStudent: Student, opportunityId: string) => {
     // Get current classes from localStorage
@@ -197,7 +200,7 @@ const StudentDashboard = () => {
                 </div>
               )}
 
-              {/* Add new section for bid status */}
+              {/* Enhanced bid status section */}
               <div className="mt-4 p-3 bg-gray-50 rounded-md">
                 <h3 className="font-medium mb-2">Your Bid Status</h3>
                 <div className="grid grid-cols-3 gap-2">
@@ -223,9 +226,19 @@ const StudentDashboard = () => {
                       )}
                     </div>
                   </div>
+                ) : student.hasUsedToken && tokenUsedOpportunity ? (
+                  <div className="grid grid-cols-3 gap-2 mt-1">
+                    <div className="text-sm">{tokenUsedOpportunity.title}</div>
+                    <div className="text-sm">
+                      <Badge variant="secondary" className="text-xs">Token Used</Badge>
+                    </div>
+                    <div className="text-sm">
+                      <Badge variant="outline" className="text-xs">No Bid</Badge>
+                    </div>
+                  </div>
                 ) : (
                   <div className="text-sm text-muted-foreground py-2 text-center">
-                    {student.hasUsedToken ? "Token used, no bid placed yet" : "No bid placed yet"}
+                    {student.hasUsedToken ? "Token used, but no specific opportunity found" : "No bid placed yet"}
                   </div>
                 )}
               </div>
@@ -301,6 +314,15 @@ const StudentDashboard = () => {
                     )}
                   </div>
                 </div>
+                {/* Show which opportunity the token was used for */}
+                {student.hasUsedToken && tokenUsedOpportunity && (
+                  <div className="grid grid-cols-3 gap-1">
+                    <div className="text-sm text-muted-foreground">Token Used For:</div>
+                    <div className="col-span-2 text-sm">
+                      {tokenUsedOpportunity.title}
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
