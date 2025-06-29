@@ -190,9 +190,6 @@ const EditBidOpportunityDialog = ({
                 />
                 <span className="text-sm text-muted-foreground">students</span>
               </div>
-              <p className="text-xs text-muted-foreground">
-                This overrides the class default capacity ({currentClass?.capacity}) for this specific opportunity
-              </p>
             </div>
           </div>
         </div>
