@@ -25,9 +25,9 @@ const StudentLogin = ({ classes, onLogin }: StudentLoginProps) => {
 
     // Simulate API call delay
     setTimeout(() => {
-      // Find all classes where the student is enrolled
-      const studentClasses: ClassConfig[] = [];
+      // Find student across all classes
       let foundStudent: Student | null = null;
+      const studentClasses: ClassConfig[] = [];
 
       classes.forEach(classConfig => {
         const student = classConfig.students.find(s => 
@@ -37,21 +37,19 @@ const StudentLogin = ({ classes, onLogin }: StudentLoginProps) => {
         );
         
         if (student) {
+          foundStudent = student;
           studentClasses.push(classConfig);
-          if (!foundStudent) {
-            foundStudent = student;
-          }
         }
       });
       
       if (foundStudent && studentClasses.length > 0) {
         toast({
           title: "Login successful",
-          description: `Welcome, ${foundStudent.name}! Found ${studentClasses.length} class${studentClasses.length > 1 ? 'es' : ''}.`,
+          description: `Welcome, ${foundStudent.name}! Found ${studentClasses.length} class(es).`,
         });
         onLogin(true);
         
-        // Navigate to the student dashboard with auth data
+        // Navigate to the student dashboard with student and classes data
         navigate("/student", { 
           state: { 
             student: foundStudent,
@@ -102,6 +100,9 @@ const StudentLogin = ({ classes, onLogin }: StudentLoginProps) => {
               required
               disabled={isLoading}
             />
+          </div>
+          <div className="text-sm text-muted-foreground">
+            <p>You will see all classes you're enrolled in after logging in.</p>
           </div>
         </CardContent>
         <CardFooter>

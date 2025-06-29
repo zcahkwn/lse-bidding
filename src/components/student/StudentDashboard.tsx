@@ -49,16 +49,6 @@ const StudentDashboard = () => {
               setCurrentClass(updatedCurrentClass);
             }
           }
-          
-          // Update student data from the stored data
-          if (currentClass) {
-            const updatedStudent = updatedClasses
-              .find(c => c.id === currentClass.id)?.students
-              .find((s: Student) => s.id === student.id);
-            if (updatedStudent) {
-              setStudent(updatedStudent);
-            }
-          }
         } catch (error) {
           console.error("Error parsing stored class data:", error);
         }
@@ -66,36 +56,30 @@ const StudentDashboard = () => {
     }
   }, []);
   
+  const handleSelectClass = (classId: string) => {
+    const selectedClass = classes.find(c => c.id === classId);
+    if (selectedClass) {
+      setCurrentClass(selectedClass);
+    }
+  };
+  
   if (!student || classes.length === 0) {
     return (
-      <div className="container mx-auto p-4">
-        <h1 className="text-2xl font-heading font-bold mb-6">Student Dashboard</h1>
-        <p className="text-center text-muted-foreground py-8">
-          Please log in to view your dashboard
-        </p>
-        <div className="flex justify-center">
-          <Button onClick={() => navigate("/")}>Back to Login</Button>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-heading font-bold mb-6">Student Dashboard</h1>
+          <p className="text-center text-muted-foreground py-8">
+            Please log in to view your dashboard
+          </p>
+          <div className="flex justify-center">
+            <Button onClick={() => navigate("/")}>Back to Login</Button>
+          </div>
         </div>
       </div>
     );
   }
   
-  const handleSelectClass = (classId: string) => {
-    const selectedClass = classes.find(c => c.id === classId);
-    if (selectedClass) {
-      setCurrentClass(selectedClass);
-      
-      // Update student data for the selected class
-      const studentInClass = selectedClass.students.find(s => s.id === student.id);
-      if (studentInClass) {
-        setStudent(studentInClass);
-      }
-    }
-  };
-  
   const handleBidSubmitted = (bidId: string, updatedStudent: Student, opportunityId: string) => {
-    if (!currentClass) return;
-    
     // Get current classes from localStorage
     const storedClassesStr = localStorage.getItem("classData");
     if (storedClassesStr) {
@@ -104,7 +88,7 @@ const StudentDashboard = () => {
         
         // Find and update the current class
         const updatedClasses = storedClasses.map((c: ClassConfig) => {
-          if (c.id === currentClass.id) {
+          if (c.id === currentClass?.id) {
             // Update the student in the students array
             const updatedStudents = c.students.map((s: Student) => 
               s.id === updatedStudent.id ? updatedStudent : s
@@ -147,16 +131,12 @@ const StudentDashboard = () => {
         localStorage.setItem("classData", JSON.stringify(updatedClasses));
         
         // Find the updated class config to use for state updates
-        const updatedClassConfig = updatedClasses.find((c: ClassConfig) => c.id === currentClass.id);
-        const updatedAllClasses = classes.map(c => {
-          const updated = updatedClasses.find((uc: ClassConfig) => uc.id === c.id);
-          return updated || c;
-        });
+        const updatedClassConfig = updatedClasses.find((c: ClassConfig) => c.id === currentClass?.id);
         
         // Update UI state
         setStudent(updatedStudent);
-        setClasses(updatedAllClasses);
         setCurrentClass(updatedClassConfig);
+        setClasses(updatedClasses);
         
       } catch (error) {
         console.error("Error updating class data:", error);
@@ -172,17 +152,10 @@ const StudentDashboard = () => {
   const handleLogout = () => {
     navigate("/");
   };
-  
-  // Ensure bidOpportunities exists, default to empty array if not
-  const bidOpportunities = currentClass?.bidOpportunities || [];
-  
-  // Find first open opportunity (if any)
-  const nextOpenOpportunity = bidOpportunities.find(
-    opportunity => getBidOpportunityStatus(opportunity) === "Open for Bidding"
-  );
-  
-  // Find opportunity the student has bid on (if any)
-  const studentBidOpportunity = bidOpportunities.find(
+
+  // Get student's status in current class
+  const studentInCurrentClass = currentClass?.students.find(s => s.id === student.id);
+  const studentBidOpportunity = currentClass?.bidOpportunities?.find(
     opportunity => opportunity.bidders && opportunity.bidders.some(bidder => bidder.id === student.id)
   );
   
@@ -230,129 +203,111 @@ const StudentDashboard = () => {
                 <TabsTrigger value="profile">Profile</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="overview" className="space-y-6">
-                {/* Class Overview */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-xl font-heading flex items-center gap-2">
-                      <BookOpen className="w-5 h-5" />
-                      {currentClass.className}
-                    </CardTitle>
-                    <CardDescription>{currentClass.rewardDescription}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                      <div className="text-center p-4 bg-gray-50 rounded-lg">
-                        <Coins className="w-6 h-6 mx-auto mb-2 text-academy-blue" />
-                        <div className="text-lg font-semibold">
-                          {student.hasUsedToken ? "Used" : "Available"}
-                        </div>
-                        <div className="text-sm text-gray-600">Token Status</div>
-                      </div>
-                      
-                      <div className="text-center p-4 bg-gray-50 rounded-lg">
-                        <Calendar className="w-6 h-6 mx-auto mb-2 text-academy-blue" />
-                        <div className="text-lg font-semibold">{bidOpportunities.length}</div>
-                        <div className="text-sm text-gray-600">Total Opportunities</div>
-                      </div>
-                      
-                      <div className="text-center p-4 bg-gray-50 rounded-lg">
-                        <Trophy className="w-6 h-6 mx-auto mb-2 text-academy-blue" />
-                        <div className="text-lg font-semibold">
-                          {studentBidOpportunity ? "Yes" : "No"}
-                        </div>
-                        <div className="text-sm text-gray-600">Bid Placed</div>
-                      </div>
-                      
-                      <div className="text-center p-4 bg-gray-50 rounded-lg">
-                        <Users className="w-6 h-6 mx-auto mb-2 text-academy-blue" />
-                        <div className="text-lg font-semibold">{currentClass.students.length}</div>
-                        <div className="text-sm text-gray-600">Total Students</div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Quick Actions */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <TabsContent value="overview">
+                <div className="space-y-6">
+                  {/* Class Header */}
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-lg font-heading">Token Status</CardTitle>
+                      <CardTitle className="text-xl font-heading">{currentClass.className}</CardTitle>
+                      <CardDescription>{currentClass.rewardDescription}</CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="flex items-center justify-between mb-4">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-academy-blue">
+                            {currentClass.bidOpportunities?.length || 0}
+                          </div>
+                          <div className="text-sm text-gray-600">Total Opportunities</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-green-600">
+                            {currentClass.bidOpportunities?.filter(opp => {
+                              const now = new Date();
+                              const eventDate = new Date(opp.date);
+                              const biddingOpensDate = opp.bidOpenDate 
+                                ? new Date(opp.bidOpenDate)
+                                : new Date(eventDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+                              return now >= biddingOpensDate && now < eventDate;
+                            }).length || 0}
+                          </div>
+                          <div className="text-sm text-gray-600">Open for Bidding</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold">
+                            {studentInCurrentClass?.hasUsedToken ? (
+                              <span className="text-red-600">0</span>
+                            ) : (
+                              <span className="text-green-600">1</span>
+                            )}
+                          </div>
+                          <div className="text-sm text-gray-600">Tokens Available</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-purple-600">
+                            {currentClass.bidders?.filter(b => b.id === student.id).length || 0}
+                          </div>
+                          <div className="text-sm text-gray-600">Your Bids</div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Token Status */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg font-heading flex items-center gap-2">
+                        <Coins className="w-5 h-5" />
+                        Token Status
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center justify-between">
                         <span>Your bidding token:</span>
-                        {student.hasUsedToken ? (
+                        {studentInCurrentClass?.hasUsedToken ? (
                           <Badge variant="secondary">Used</Badge>
                         ) : (
                           <Badge className="bg-academy-blue">Available</Badge>
                         )}
                       </div>
                       
-                      {nextOpenOpportunity && !student.hasUsedToken && (
-                        <div className="p-3 bg-gray-50 rounded-md">
-                          <p className="text-sm">
-                            <span className="font-medium">
-                              {nextOpenOpportunity.bidders?.length || 0}
-                            </span> student(s) have already placed bids for the next open opportunity
-                          </p>
+                      {studentBidOpportunity && (
+                        <div className="mt-4 p-3 bg-gray-50 rounded-md">
+                          <h4 className="font-medium mb-2 text-green-600">Your Bid Status</h4>
+                          <div className="grid grid-cols-3 gap-2 text-sm">
+                            <div className="font-medium">Event</div>
+                            <div className="font-medium">Status</div>
+                            <div className="font-medium">Result</div>
+                            <div>{studentBidOpportunity.title}</div>
+                            <div>
+                              <Badge variant="outline" className="text-xs">Bid Placed</Badge>
+                            </div>
+                            <div>
+                              {studentBidOpportunity.selectedStudents && 
+                               studentBidOpportunity.selectedStudents.some(s => s.id === student.id) ? (
+                                <Badge variant="default" className="bg-green-500 text-xs">Selected</Badge>
+                              ) : getBidOpportunityStatus(studentBidOpportunity) === "Completed" ? (
+                                <Badge variant="secondary" className="text-xs">Not Selected</Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-xs">Pending</Badge>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       )}
                     </CardContent>
                   </Card>
 
+                  {/* Recent Opportunities */}
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-lg font-heading">Bid Status</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {studentBidOpportunity ? (
-                        <div className="space-y-2">
-                          <div className="flex justify-between">
-                            <span className="text-sm">Event:</span>
-                            <span className="text-sm font-medium">{studentBidOpportunity.title}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm">Status:</span>
-                            <Badge variant="outline" className="text-xs">Bid Placed</Badge>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm">Result:</span>
-                            {studentBidOpportunity.selectedStudents && 
-                             studentBidOpportunity.selectedStudents.some(s => s.id === student.id) ? (
-                              <Badge variant="default" className="bg-green-500 text-xs">Selected</Badge>
-                            ) : getBidOpportunityStatus(studentBidOpportunity) === "Selection Complete" ? (
-                              <Badge variant="secondary" className="text-xs">Not Selected</Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-xs">Pending</Badge>
-                            )}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-sm text-muted-foreground text-center py-4">
-                          {student.hasUsedToken ? "Token used, no bid placed yet" : "No bid placed yet"}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="opportunities" className="space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <EnhancedBidCard 
-                    student={student}
-                    classConfig={currentClass}
-                    onBidSubmitted={handleBidSubmitted}
-                  />
-                  
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg font-heading">Upcoming Opportunities</CardTitle>
+                      <CardTitle className="text-lg font-heading flex items-center gap-2">
+                        <Calendar className="w-5 h-5" />
+                        Recent Opportunities
+                      </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-3 max-h-72 overflow-y-auto">
-                        {bidOpportunities.map((opportunity) => (
+                        {currentClass.bidOpportunities?.slice(0, 5).map((opportunity) => (
                           <div 
                             key={opportunity.id}
                             className="p-3 border rounded-md flex justify-between items-center"
@@ -370,7 +325,59 @@ const StudentDashboard = () => {
                               )}
                             </div>
                           </div>
-                        ))}
+                        )) || (
+                          <p className="text-center text-muted-foreground py-4">
+                            No opportunities available yet
+                          </p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="opportunities">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <EnhancedBidCard 
+                    student={studentInCurrentClass || student}
+                    classConfig={currentClass}
+                    onBidSubmitted={handleBidSubmitted}
+                  />
+                  
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg font-heading">All Opportunities</CardTitle>
+                      <CardDescription>Complete list of bidding opportunities for this class</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3 max-h-96 overflow-y-auto">
+                        {currentClass.bidOpportunities?.map((opportunity) => (
+                          <div 
+                            key={opportunity.id}
+                            className="p-4 border rounded-md"
+                          >
+                            <div className="flex justify-between items-start mb-2">
+                              <h4 className="font-medium">{opportunity.title}</h4>
+                              <Badge variant={getBidOpportunityStatus(opportunity) === "Open for Bidding" ? "default" : "secondary"}>
+                                {getBidOpportunityStatus(opportunity)}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-2">{opportunity.description}</p>
+                            <div className="flex justify-between items-center text-xs text-gray-500">
+                              <span>Event: {formatDate(opportunity.date)}</span>
+                              <span>Capacity: {opportunity.capacity || currentClass.capacity} students</span>
+                            </div>
+                            {opportunity.bidders && opportunity.bidders.some(bidder => bidder.id === student.id) && (
+                              <div className="mt-2">
+                                <Badge variant="outline" className="text-xs">You've placed a bid</Badge>
+                              </div>
+                            )}
+                          </div>
+                        )) || (
+                          <p className="text-center text-muted-foreground py-8">
+                            No opportunities available yet
+                          </p>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -378,47 +385,62 @@ const StudentDashboard = () => {
               </TabsContent>
               
               <TabsContent value="profile">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg font-heading">Your Information</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-3 gap-1">
-                        <div className="text-sm text-muted-foreground">Name:</div>
-                        <div className="col-span-2 font-medium">{student.name}</div>
-                      </div>
-                      <div className="grid grid-cols-3 gap-1">
-                        <div className="text-sm text-muted-foreground">Email:</div>
-                        <div className="col-span-2">{student.email}</div>
-                      </div>
-                      {student.studentNumber && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg font-heading">Your Information</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
                         <div className="grid grid-cols-3 gap-1">
-                          <div className="text-sm text-muted-foreground">Student Number:</div>
-                          <div className="col-span-2">{student.studentNumber}</div>
+                          <div className="text-sm text-muted-foreground">Name:</div>
+                          <div className="col-span-2 font-medium">{student.name}</div>
                         </div>
-                      )}
-                      <div className="grid grid-cols-3 gap-1">
-                        <div className="text-sm text-muted-foreground">Classes Enrolled:</div>
-                        <div className="col-span-2">{classes.length}</div>
-                      </div>
-                      <div className="grid grid-cols-3 gap-1">
-                        <div className="text-sm text-muted-foreground">Current Class:</div>
-                        <div className="col-span-2">{currentClass.className}</div>
-                      </div>
-                      <div className="grid grid-cols-3 gap-1">
-                        <div className="text-sm text-muted-foreground">Token Status:</div>
-                        <div className="col-span-2">
-                          {student.hasUsedToken ? (
-                            <Badge variant="secondary">Used</Badge>
-                          ) : (
-                            <Badge className="bg-academy-blue">Available</Badge>
-                          )}
+                        <div className="grid grid-cols-3 gap-1">
+                          <div className="text-sm text-muted-foreground">Email:</div>
+                          <div className="col-span-2">{student.email}</div>
+                        </div>
+                        {student.studentNumber && (
+                          <div className="grid grid-cols-3 gap-1">
+                            <div className="text-sm text-muted-foreground">Student Number:</div>
+                            <div className="col-span-2">{student.studentNumber}</div>
+                          </div>
+                        )}
+                        <div className="grid grid-cols-3 gap-1">
+                          <div className="text-sm text-muted-foreground">Classes Enrolled:</div>
+                          <div className="col-span-2">{classes.length}</div>
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg font-heading">Class Summary</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {classes.map((classItem) => {
+                          const studentInClass = classItem.students.find(s => s.id === student.id);
+                          return (
+                            <div key={classItem.id} className="p-3 border rounded-md">
+                              <div className="flex justify-between items-start mb-2">
+                                <h4 className="font-medium">{classItem.className}</h4>
+                                <Badge variant={studentInClass?.hasUsedToken ? "secondary" : "default"}>
+                                  {studentInClass?.hasUsedToken ? "Token Used" : "Token Available"}
+                                </Badge>
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {classItem.bidOpportunities?.length || 0} opportunities • 
+                                {classItem.bidders?.filter(b => b.id === student.id).length || 0} bids placed
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
               </TabsContent>
             </Tabs>
           ) : (
@@ -426,7 +448,7 @@ const StudentDashboard = () => {
               <CardContent className="p-8 text-center">
                 <h2 className="text-xl mb-4">No Class Selected</h2>
                 <p className="text-muted-foreground">
-                  Please select a class from the sidebar to view its details.
+                  Select a class from the sidebar to view its details and opportunities.
                 </p>
               </CardContent>
             </Card>
