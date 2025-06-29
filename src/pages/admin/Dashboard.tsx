@@ -245,6 +245,11 @@ const Dashboard = ({
 
   // Get real-time bid count for a specific opportunity
   const getOpportunityBidCount = (opportunityId: string): number => {
+    // Add null check for statistics to prevent TypeError
+    if (!statistics || !statistics.opportunities) {
+      return 0;
+    }
+    
     const opportunityStats = statistics.opportunities.find(opp => opp.opportunityId === opportunityId);
     return opportunityStats?.bidCount || 0;
   };
@@ -317,7 +322,7 @@ const Dashboard = ({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {statsLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : statistics.totalStudents}
+              {statsLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : statistics?.totalStudents || 0}
             </div>
             <p className="text-xs text-muted-foreground">
               Total enrolled
@@ -332,7 +337,7 @@ const Dashboard = ({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {statsLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : statistics.studentsWithTokens}
+              {statsLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : statistics?.studentsWithTokens || 0}
             </div>
             <p className="text-xs text-muted-foreground">
               Ready to bid
@@ -347,7 +352,7 @@ const Dashboard = ({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
-              {statsLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : statistics.studentsWhoBid}
+              {statsLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : statistics?.studentsWhoBid || 0}
             </div>
             <p className="text-xs text-muted-foreground">
               Have placed bids
@@ -377,7 +382,7 @@ const Dashboard = ({
             <div>
               <Label className="text-sm font-medium text-gray-500">Total Bids</Label>
               <p className="text-lg font-semibold mt-1 text-blue-600">
-                {statsLoading ? <Loader2 className="w-5 h-5 animate-spin inline" /> : statistics.totalBids}
+                {statsLoading ? <Loader2 className="w-5 h-5 animate-spin inline" /> : statistics?.totalBids || 0}
               </p>
             </div>
           </div>
@@ -787,9 +792,9 @@ const Dashboard = ({
                 <AlertDescription>
                   <strong>WARNING:</strong> Deleting this class will remove:
                   <ul className="list-disc list-inside mt-2 space-y-1">
-                    <li>{statistics.totalStudents} student records</li>
+                    <li>{statistics?.totalStudents || 0} student records</li>
                     <li>{currentClass.bidOpportunities.length} bidding opportunities</li>
-                    <li>{statistics.totalBids} bids and token history</li>
+                    <li>{statistics?.totalBids || 0} bids and token history</li>
                     <li>Any dinner tables created for this class</li>
                   </ul>
                 </AlertDescription>
