@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatDate, getBidOpportunityStatus } from "@/utils/dates";
 import EditBidOpportunityDialog from "@/components/admin/EditBidOpportunityDialog";
 import { createBidOpportunity } from "@/lib/classService";
-import { Trash2, AlertTriangle, Users, Coins, Calendar as CalendarIcon, Settings, Plus, Edit, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Trash2, AlertTriangle, Users, Coins, Calendar as CalendarIcon, Settings, Plus, Edit, Eye, EyeOff, Loader2, Info } from "lucide-react";
 import { format } from "date-fns";
 
 interface DashboardProps {
@@ -429,9 +429,16 @@ const Dashboard = ({
                           <TableRow>
                             <TableCell colSpan={7} className="p-0">
                               <div className="bg-blue-50/50 border-l-4 border-l-academy-blue p-6">
-                                <h3 className="text-lg font-semibold mb-4 text-academy-blue">
+                                <h3 className="text-lg font-semibold mb-4 text-academy-blue flex items-center gap-2">
+                                  <Info className="w-5 h-5" />
                                   Student Overview: {opportunity.title}
                                 </h3>
+                                
+                                {/* Opportunity Description */}
+                                <div className="mb-6 p-4 bg-white rounded-md border border-blue-100">
+                                  <h4 className="text-sm font-medium text-gray-700 mb-2">Description:</h4>
+                                  <p className="text-gray-600">{opportunity.description}</p>
+                                </div>
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                   {/* Active Bidders */}
