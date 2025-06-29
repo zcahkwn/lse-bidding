@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,7 +67,7 @@ const RewardConfig = ({ currentClass, onUpdate }: RewardConfigProps) => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="capacity">Capacity</Label>
+            <Label htmlFor="capacity">Default Capacity</Label>
             <div className="flex items-center gap-2">
               <Input
                 id="capacity"
@@ -81,6 +80,9 @@ const RewardConfig = ({ currentClass, onUpdate }: RewardConfigProps) => {
               />
               <span className="text-sm text-muted-foreground">students</span>
             </div>
+            <p className="text-xs text-muted-foreground">
+              This is the default number of students that can be selected for each opportunity
+            </p>
           </div>
           
           <Button type="submit" className="w-full">Save Configuration</Button>
