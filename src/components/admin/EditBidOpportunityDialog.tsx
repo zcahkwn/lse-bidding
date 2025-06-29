@@ -36,13 +36,13 @@ const EditBidOpportunityDialog = ({
   const [biddingOpenDate, setBiddingOpenDate] = useState<Date | undefined>(
     opportunity ? addDays(new Date(opportunity.date), -7) : undefined
   );
-  const [capacity, setCapacity] = useState(opportunity?.capacity || currentClass?.capacity || 7);
+  const [capacity, setCapacity] = useState(opportunity?.capacity || currentClass?.capacity);
   const [isSaving, setIsSaving] = useState(false);
   
   const { toast } = useToast();
   
   const handleSave = async () => {
-    if (!opportunity || !date || !biddingOpenDate || !currentClass) return;
+    if (!opportunity || !date || !biddingOpenDate || !currentClass || !capacity) return;
     
     setIsSaving(true);
     

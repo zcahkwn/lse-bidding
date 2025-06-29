@@ -200,7 +200,8 @@ const RealtimeSelectionProcess = ({
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Random selection
-      const capacity = currentClass.capacity;
+      const selectedOpportunity = bidOpportunities.find(opp => opp.id === selectedOpportunityId);
+      const capacity = selectedOpportunity?.capacity || currentClass.capacity;
       const selectedCount = Math.min(capacity, bidders.length);
       const shuffled = [...bidders].sort(() => Math.random() - 0.5);
       const selected = shuffled.slice(0, selectedCount);
@@ -333,7 +334,7 @@ const RealtimeSelectionProcess = ({
                 </div>
                 <div>
                   <span className="text-muted-foreground">Capacity:</span>
-                  <div className="font-medium">{currentClass.capacity} students</div>
+                  <div className="font-medium">{selectedOpportunity.capacity || currentClass.capacity} students</div>
                 </div>
               </div>
 
@@ -347,7 +348,7 @@ const RealtimeSelectionProcess = ({
                 <Users className="h-4 w-4" />
                 <AlertDescription>
                   <strong>{currentBidCount} students</strong> have placed bids for this opportunity.
-                  {currentBidCount > currentClass.capacity ? (
+                  {currentBidCount > (selectedOpportunity.capacity || currentClass.capacity) ? (
                     <span className="text-blue-600 font-medium"> Random selection will be required.</span>
                   ) : currentBidCount > 0 ? (
                     <span className="text-green-600 font-medium"> All bidders can be selected.</span>

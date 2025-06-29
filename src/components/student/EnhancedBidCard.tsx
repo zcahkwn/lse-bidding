@@ -126,6 +126,11 @@ const EnhancedBidCard = ({ student, classConfig, onBidSubmitted }: EnhancedBidCa
                   </div>
                   
                   <div className="flex justify-between items-center">
+                    <span className="text-sm">Capacity:</span>
+                    <Badge variant="outline">{opportunity.capacity || classConfig.capacity} students</Badge>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
                     <span className="text-sm">Current Bids:</span>
                     <Badge variant="outline">{opportunity.bidders?.length || 0} students</Badge>
                   </div>

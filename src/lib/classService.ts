@@ -65,7 +65,7 @@ export const createClass = async (classData: CreateClassData): Promise<ClassConf
       .insert({
         name: classData.name,
         password_hash: classData.password, // In production, this should be hashed
-        capacity_default: classData.capacity || 7
+        capacity_default: classData.capacity
       })
       .select()
       .single()
@@ -291,8 +291,7 @@ export const createBidOpportunity = async (
         opens_at: opportunityData.opens_at,
         closes_at: opportunityData.closes_at,
         event_date: new Date(opportunityData.event_date).toISOString().split('T')[0],
-        capacity: opportunityData.capacity || 7,
-        status: 'upcoming'
+        capacity: opportunityData.capacity
       })
       .select()
       .single()
@@ -414,7 +413,7 @@ export const updateClass = async (classId: string, updates: Partial<CreateClassD
     
     if (updates.name) updateData.name = updates.name
     if (updates.password) updateData.password_hash = updates.password
-    if (updates.capacity) updateData.capacity_default = updates.capacity
+    if (updates.capacity !== undefined) updateData.capacity_default = updates.capacity
 
     const { error } = await supabase
       .from('classes')

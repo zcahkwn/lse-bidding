@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -60,7 +60,7 @@ const Dashboard = ({
   const [description, setDescription] = useState("");
   const [eventDate, setEventDate] = useState<Date | undefined>(undefined);
   const [bidOpenDate, setBidOpenDate] = useState<Date | undefined>(undefined);
-  const [capacity, setCapacity] = useState(currentClass?.capacity || 7);
+  const [capacity, setCapacity] = useState<number | undefined>(currentClass?.capacity);
   
   // Get the selected opportunity if there is one
   const selectedOpportunity = currentClass?.bidOpportunities?.find(
@@ -72,11 +72,11 @@ const Dashboard = ({
     setDescription("");
     setEventDate(undefined);
     setBidOpenDate(undefined);
-    setCapacity(currentClass?.capacity || 7);
+    setCapacity(currentClass?.capacity);
   };
   
   const handleCreateOpportunity = async () => {
-    if (!currentClass || !title || !description || !eventDate || !bidOpenDate) {
+    if (!currentClass || !title || !description || !eventDate || !bidOpenDate || !capacity) {
       toast({
         title: "Missing information",
         description: "Please fill in all required fields",
@@ -528,126 +528,6 @@ const Dashboard = ({
         )}
       </div>
 
-      {/* Student Overview Section */}
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-heading font-bold">Student Overview</h2>
-          <p className="text-muted-foreground">Current bidding activity and selections</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                Active Bidders
-              </CardTitle>
-              <CardDescription>
-                {selectedOpportunity 
-                  ? `Students who have placed bids for ${selectedOpportunity.title}`
-                  : `Students who have placed bids for any opportunity`}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {selectedOpportunity ? (
-                selectedOpportunity.bidders.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Users className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                    <p className="text-muted-foreground">No bids placed yet for this opportunity</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3 max-h-60 overflow-y-auto">
-                    {selectedOpportunity.bidders.map((student) => (
-                      <div key={student.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div>
-                          <div className="font-medium">{student.name}</div>
-                          <div className="text-sm text-muted-foreground">{student.email}</div>
-                        </div>
-                        <Badge variant="outline">Bidder</Badge>
-                      </div>
-                    ))}
-                  </div>
-                )
-              ) : (
-                currentClass.bidders.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Users className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                    <p className="text-muted-foreground">No bids placed yet for any opportunity</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3 max-h-60 overflow-y-auto">
-                    {currentClass.bidders.map((student) => (
-                      <div key={student.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div>
-                          <div className="font-medium">{student.name}</div>
-                          <div className="text-sm text-muted-foreground">{student.email}</div>
-                        </div>
-                        <Badge variant="outline">Bidder</Badge>
-                      </div>
-                    ))}
-                  </div>
-                )
-              )}
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-green-600" />
-                Selected Students
-              </CardTitle>
-              <CardDescription>
-                {selectedOpportunity 
-                  ? `Students who were selected for ${selectedOpportunity.title}`
-                  : `Students who were selected for the current reward`}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {selectedOpportunity ? (
-                selectedOpportunity.selectedStudents?.length === 0 || !selectedOpportunity.selectedStudents ? (
-                  <div className="text-center py-8">
-                    <Users className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                    <p className="text-muted-foreground">No students have been selected yet for this opportunity</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3 max-h-60 overflow-y-auto">
-                    {selectedOpportunity.selectedStudents.map((student) => (
-                      <div key={student.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
-                        <div>
-                          <div className="font-medium">{student.name}</div>
-                          <div className="text-sm text-muted-foreground">{student.email}</div>
-                        </div>
-                        <Badge className="bg-green-500">Selected</Badge>
-                      </div>
-                    ))}
-                  </div>
-                )
-              ) : (
-                currentClass.selectedStudents?.length === 0 || !currentClass.selectedStudents ? (
-                  <div className="text-center py-8">
-                    <Users className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                    <p className="text-muted-foreground">No students have been selected yet</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3 max-h-60 overflow-y-auto">
-                    {currentClass.selectedStudents.map((student) => (
-                      <div key={student.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
-                        <div>
-                          <div className="font-medium">{student.name}</div>
-                          <div className="text-sm text-muted-foreground">{student.email}</div>
-                        </div>
-                        <Badge className="bg-green-500">Selected</Badge>
-                      </div>
-                    ))}
-                  </div>
-                )
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
       {/* Create Opportunity Dialog */}
       <Dialog open={showCreateOpportunityDialog} onOpenChange={setShowCreateOpportunityDialog}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
@@ -741,6 +621,7 @@ const Dashboard = ({
                   value={capacity}
                   onChange={(e) => setCapacity(parseInt(e.target.value) || 1)}
                   disabled={isCreating}
+                  required
                 />
                 <span className="text-sm text-muted-foreground">students</span>
               </div>
