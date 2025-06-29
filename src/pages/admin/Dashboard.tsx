@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatDate, getBidOpportunityStatus } from "@/utils/dates";
 import EditBidOpportunityDialog from "@/components/admin/EditBidOpportunityDialog";
 import BidOpportunityManager from "@/components/admin/BidOpportunityManager";
-import { Trash2, AlertTriangle, Users, Coins, Calendar, Settings, Plus, Edit, Info, Eye, EyeOff } from "lucide-react";
+import { Trash2, AlertTriangle, Users, Coins, Calendar, Settings, Plus, Edit } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -262,164 +262,65 @@ const Dashboard = ({
         </div>
 
         {currentClass.bidOpportunities && currentClass.bidOpportunities.length > 0 ? (
-          <div className="space-y-4">
-            <Card>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Title</TableHead>
-                      <TableHead>Event Date</TableHead>
-                      <TableHead>Bidding Opens</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Bidders</TableHead>
-                      <TableHead>Selected</TableHead>
-                      <TableHead>Actions</TableHead>
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Title</TableHead>
+                    <TableHead>Event Date</TableHead>
+                    <TableHead>Bidding Opens</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Bidders</TableHead>
+                    <TableHead>Selected</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {currentClass.bidOpportunities.map((opportunity) => (
+                    <TableRow 
+                      key={opportunity.id}
+                      className={selectedOpportunityId === opportunity.id ? "bg-academy-lightBlue/10" : ""}
+                    >
+                      <TableCell className="font-medium">{opportunity.title}</TableCell>
+                      <TableCell>{formatDate(opportunity.date)}</TableCell>
+                      <TableCell>{opportunity.bidOpenDate ? formatDate(opportunity.bidOpenDate) : "1 week before"}</TableCell>
+                      <TableCell>
+                        <Badge variant={getBidOpportunityStatus(opportunity) === "Open for Bidding" ? "default" : "secondary"}>
+                          {getBidOpportunityStatus(opportunity)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{opportunity.bidders.length}</TableCell>
+                      <TableCell>{opportunity.selectedStudents?.length || 0}</TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => setSelectedOpportunityId(
+                              selectedOpportunityId === opportunity.id ? null : opportunity.id
+                            )}
+                          >
+                            {selectedOpportunityId === opportunity.id ? "Hide Details" : "View Details"}
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditOpportunity(opportunity);
+                            }}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {currentClass.bidOpportunities.map((opportunity) => (
-                      <TableRow 
-                        key={opportunity.id}
-                        className={selectedOpportunityId === opportunity.id ? "bg-academy-lightBlue/10" : ""}
-                      >
-                        <TableCell className="font-medium">{opportunity.title}</TableCell>
-                        <TableCell>{formatDate(opportunity.date)}</TableCell>
-                        <TableCell>{opportunity.bidOpenDate ? formatDate(opportunity.bidOpenDate) : "1 week before"}</TableCell>
-                        <TableCell>
-                          <Badge variant={getBidOpportunityStatus(opportunity) === "Open for Bidding" ? "default" : "secondary"}>
-                            {getBidOpportunityStatus(opportunity)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{opportunity.bidders.length}</TableCell>
-                        <TableCell>{opportunity.selectedStudents?.length || 0}</TableCell>
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => setSelectedOpportunityId(
-                                selectedOpportunityId === opportunity.id ? null : opportunity.id
-                              )}
-                              className="flex items-center gap-1"
-                            >
-                              {selectedOpportunityId === opportunity.id ? (
-                                <>
-                                  <EyeOff className="w-4 h-4" />
-                                  Hide Details
-                                </>
-                              ) : (
-                                <>
-                                  <Eye className="w-4 h-4" />
-                                  View Details
-                                </>
-                              )}
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditOpportunity(opportunity);
-                              }}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-
-            {/* Selected Opportunity Details */}
-            {selectedOpportunity && (
-              <Card className="border-l-4 border-l-academy-blue bg-blue-50/50">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Info className="w-5 h-5 text-academy-blue" />
-                    Opportunity Details: {selectedOpportunity.title}
-                  </CardTitle>
-                  <CardDescription>
-                    Detailed information for the selected bidding opportunity
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <Label className="text-sm font-medium text-gray-600">Description</Label>
-                      <div className="mt-2 p-3 bg-white rounded-md border">
-                        <p className="text-gray-800">{selectedOpportunity.description}</p>
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-gray-600">Event Details</Label>
-                      <div className="mt-2 space-y-3">
-                        <div className="flex justify-between items-center p-2 bg-white rounded border">
-                          <span className="text-sm text-gray-600">Event Date:</span>
-                          <span className="font-medium">{formatDate(selectedOpportunity.date)}</span>
-                        </div>
-                        <div className="flex justify-between items-center p-2 bg-white rounded border">
-                          <span className="text-sm text-gray-600">Bidding Opens:</span>
-                          <span className="font-medium">
-                            {selectedOpportunity.bidOpenDate ? formatDate(selectedOpportunity.bidOpenDate) : "1 week before"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center p-2 bg-white rounded border">
-                          <span className="text-sm text-gray-600">Student Capacity:</span>
-                          <span className="font-medium text-purple-600">{currentClass.capacity} students</span>
-                        </div>
-                        <div className="flex justify-between items-center p-2 bg-white rounded border">
-                          <span className="text-sm text-gray-600">Current Bidders:</span>
-                          <span className="font-medium text-blue-600">{selectedOpportunity.bidders.length} students</span>
-                        </div>
-                        <div className="flex justify-between items-center p-2 bg-white rounded border">
-                          <span className="text-sm text-gray-600">Status:</span>
-                          <Badge variant={getBidOpportunityStatus(selectedOpportunity) === "Open for Bidding" ? "default" : "secondary"}>
-                            {getBidOpportunityStatus(selectedOpportunity)}
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Capacity Status Indicator */}
-                  <div className="mt-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <Label className="text-sm font-medium text-gray-600">Capacity Status</Label>
-                      <span className="text-sm text-gray-500">
-                        {selectedOpportunity.bidders.length} / {currentClass.capacity} students
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className={`h-2 rounded-full transition-all duration-300 ${
-                          selectedOpportunity.bidders.length > currentClass.capacity 
-                            ? 'bg-red-500' 
-                            : selectedOpportunity.bidders.length === currentClass.capacity
-                            ? 'bg-yellow-500'
-                            : 'bg-green-500'
-                        }`}
-                        style={{ 
-                          width: `${Math.min((selectedOpportunity.bidders.length / currentClass.capacity) * 100, 100)}%` 
-                        }}
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {selectedOpportunity.bidders.length > currentClass.capacity 
-                        ? `${selectedOpportunity.bidders.length - currentClass.capacity} students over capacity - random selection will be required`
-                        : selectedOpportunity.bidders.length === currentClass.capacity
-                        ? "At full capacity - all bidders can be selected"
-                        : `${currentClass.capacity - selectedOpportunity.bidders.length} spots remaining`
-                      }
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         ) : (
           <Card>
             <CardContent className="p-8 text-center">
