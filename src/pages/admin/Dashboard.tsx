@@ -394,7 +394,7 @@ const Dashboard = ({
                         <TableCell className="font-medium">{opportunity.title}</TableCell>
                         <TableCell>
                           <Badge variant="outline">
-                            {opportunity.capacity || currentClass.capacity} students
+                            {opportunity.capacity} students
                           </Badge>
                         </TableCell>
                         <TableCell>{formatDate(opportunity.date)}</TableCell>
@@ -461,90 +461,158 @@ const Dashboard = ({
 
             {/* Selected Opportunity Details */}
             {selectedOpportunity && (
-              <Card className="border-l-4 border-l-academy-blue bg-blue-50/50">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Info className="w-5 h-5 text-academy-blue" />
-                    Opportunity Details: {selectedOpportunity.title}
-                  </CardTitle>
-                  <CardDescription>
-                    Detailed information for the selected bidding opportunity
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <Label className="text-sm font-medium text-gray-600">Description</Label>
-                      <div className="mt-2 p-3 bg-white rounded-md border">
-                        <p className="text-gray-800">{selectedOpportunity.description}</p>
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-gray-600">Event Details</Label>
-                      <div className="mt-2 space-y-3">
-                        <div className="flex justify-between items-center p-2 bg-white rounded border">
-                          <span className="text-sm text-gray-600">Event Date:</span>
-                          <span className="font-medium">{formatDate(selectedOpportunity.date)}</span>
-                        </div>
-                        <div className="flex justify-between items-center p-2 bg-white rounded border">
-                          <span className="text-sm text-gray-600">Bidding Opens:</span>
-                          <span className="font-medium">
-                            {selectedOpportunity.bidOpenDate ? formatDate(selectedOpportunity.bidOpenDate) : "1 week before"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center p-2 bg-white rounded border">
-                          <span className="text-sm text-gray-600">Student Capacity:</span>
-                          <span className="font-medium text-purple-600">
-                            {selectedOpportunity.capacity || currentClass.capacity} students
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center p-2 bg-white rounded border">
-                          <span className="text-sm text-gray-600">Current Bidders:</span>
-                          <span className="font-medium text-blue-600">{selectedOpportunity.bidders.length} students</span>
-                        </div>
-                        <div className="flex justify-between items-center p-2 bg-white rounded border">
-                          <span className="text-sm text-gray-600">Status:</span>
-                          <Badge variant={getBidOpportunityStatus(selectedOpportunity) === "Open for Bidding" ? "default" : "secondary"}>
-                            {getBidOpportunityStatus(selectedOpportunity)}
-                          </Badge>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Opportunity Details */}
+                <Card className="border-l-4 border-l-academy-blue bg-blue-50/50">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Info className="w-5 h-5 text-academy-blue" />
+                      Opportunity Details: {selectedOpportunity.title}
+                    </CardTitle>
+                    <CardDescription>
+                      Detailed information for the selected bidding opportunity
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="text-sm font-medium text-gray-600">Description</Label>
+                        <div className="mt-2 p-3 bg-white rounded-md border">
+                          <p className="text-gray-800">{selectedOpportunity.description}</p>
                         </div>
                       </div>
-                    </div>
-                  </div>
+                      <div>
+                        <Label className="text-sm font-medium text-gray-600">Event Details</Label>
+                        <div className="mt-2 space-y-3">
+                          <div className="flex justify-between items-center p-2 bg-white rounded border">
+                            <span className="text-sm text-gray-600">Event Date:</span>
+                            <span className="font-medium">{formatDate(selectedOpportunity.date)}</span>
+                          </div>
+                          <div className="flex justify-between items-center p-2 bg-white rounded border">
+                            <span className="text-sm text-gray-600">Bidding Opens:</span>
+                            <span className="font-medium">
+                              {selectedOpportunity.bidOpenDate ? formatDate(selectedOpportunity.bidOpenDate) : "1 week before"}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center p-2 bg-white rounded border">
+                            <span className="text-sm text-gray-600">Student Capacity:</span>
+                            <span className="font-medium text-purple-600">
+                              {selectedOpportunity.capacity} students
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center p-2 bg-white rounded border">
+                            <span className="text-sm text-gray-600">Current Bidders:</span>
+                            <span className="font-medium text-blue-600">{selectedOpportunity.bidders.length} students</span>
+                          </div>
+                          <div className="flex justify-between items-center p-2 bg-white rounded border">
+                            <span className="text-sm text-gray-600">Status:</span>
+                            <Badge variant={getBidOpportunityStatus(selectedOpportunity) === "Open for Bidding" ? "default" : "secondary"}>
+                              {getBidOpportunityStatus(selectedOpportunity)}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
 
-                  {/* Capacity Status Indicator */}
-                  <div className="mt-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <Label className="text-sm font-medium text-gray-600">Capacity Status</Label>
-                      <span className="text-sm text-gray-500">
-                        {selectedOpportunity.bidders.length} / {selectedOpportunity.capacity || currentClass.capacity} students
-                      </span>
+                      {/* Capacity Status Indicator */}
+                      <div className="mt-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <Label className="text-sm font-medium text-gray-600">Capacity Status</Label>
+                          <span className="text-sm text-gray-500">
+                            {selectedOpportunity.bidders.length} / {selectedOpportunity.capacity} students
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className={`h-2 rounded-full transition-all duration-300 ${
+                              selectedOpportunity.bidders.length > selectedOpportunity.capacity
+                                ? 'bg-red-500' 
+                                : selectedOpportunity.bidders.length === selectedOpportunity.capacity
+                                ? 'bg-yellow-500'
+                                : 'bg-green-500'
+                            }`}
+                            style={{ 
+                              width: `${Math.min((selectedOpportunity.bidders.length / selectedOpportunity.capacity) * 100, 100)}%` 
+                            }}
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {selectedOpportunity.bidders.length > selectedOpportunity.capacity
+                            ? `${selectedOpportunity.bidders.length - selectedOpportunity.capacity} students over capacity - random selection will be required`
+                            : selectedOpportunity.bidders.length === selectedOpportunity.capacity
+                            ? "At full capacity - all bidders can be selected"
+                            : `${selectedOpportunity.capacity - selectedOpportunity.bidders.length} spots remaining`
+                          }
+                        </p>
+                      </div>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className={`h-2 rounded-full transition-all duration-300 ${
-                          selectedOpportunity.bidders.length > (selectedOpportunity.capacity || currentClass.capacity)
-                            ? 'bg-red-500' 
-                            : selectedOpportunity.bidders.length === (selectedOpportunity.capacity || currentClass.capacity)
-                            ? 'bg-yellow-500'
-                            : 'bg-green-500'
-                        }`}
-                        style={{ 
-                          width: `${Math.min((selectedOpportunity.bidders.length / (selectedOpportunity.capacity || currentClass.capacity)) * 100, 100)}%` 
-                        }}
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {selectedOpportunity.bidders.length > (selectedOpportunity.capacity || currentClass.capacity)
-                        ? `${selectedOpportunity.bidders.length - (selectedOpportunity.capacity || currentClass.capacity)} students over capacity - random selection will be required`
-                        : selectedOpportunity.bidders.length === (selectedOpportunity.capacity || currentClass.capacity)
-                        ? "At full capacity - all bidders can be selected"
-                        : `${(selectedOpportunity.capacity || currentClass.capacity) - selectedOpportunity.bidders.length} spots remaining`
-                      }
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+
+                {/* Student Overview */}
+                <Card className="border-l-4 border-l-green-500 bg-green-50/50">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="w-5 h-5 text-green-600" />
+                      Student Overview
+                    </CardTitle>
+                    <CardDescription>
+                      Students who have bid for this opportunity
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {selectedOpportunity.bidders.length > 0 ? (
+                      <div className="space-y-3">
+                        <div className="text-sm font-medium text-gray-600 mb-3">
+                          Bidding Students ({selectedOpportunity.bidders.length})
+                        </div>
+                        <div className="max-h-64 overflow-y-auto space-y-2">
+                          {selectedOpportunity.bidders.map((bidder, index) => (
+                            <div 
+                              key={bidder.id} 
+                              className="flex items-center justify-between p-3 bg-white rounded-md border"
+                            >
+                              <div>
+                                <div className="font-medium text-gray-900">{bidder.name}</div>
+                                <div className="text-sm text-gray-500">{bidder.email}</div>
+                                {bidder.studentNumber && (
+                                  <div className="text-xs text-gray-400">ID: {bidder.studentNumber}</div>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="text-xs">
+                                  #{index + 1}
+                                </Badge>
+                                {selectedOpportunity.selectedStudents?.some(s => s.id === bidder.id) && (
+                                  <Badge className="bg-green-500 text-xs">Selected</Badge>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        {selectedOpportunity.selectedStudents && selectedOpportunity.selectedStudents.length > 0 && (
+                          <div className="mt-4 pt-4 border-t">
+                            <div className="text-sm font-medium text-green-600 mb-2">
+                              Selected Students ({selectedOpportunity.selectedStudents.length})
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              These students have been chosen for this opportunity
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                        <p className="text-gray-500 mb-2">No students have bid yet</p>
+                        <p className="text-xs text-gray-400">
+                          Students will appear here once they place bids for this opportunity
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
             )}
           </div>
         ) : (
@@ -660,6 +728,9 @@ const Dashboard = ({
                 />
                 <span className="text-sm text-muted-foreground">students</span>
               </div>
+              <p className="text-xs text-muted-foreground">
+                Maximum number of students for this opportunity (0 or any positive number)
+              </p>
             </div>
           </div>
           <DialogFooter>
