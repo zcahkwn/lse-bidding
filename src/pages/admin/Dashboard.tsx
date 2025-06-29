@@ -3,21 +3,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
 import { ClassConfig, BidOpportunity } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { formatDate, getBidOpportunityStatus } from "@/utils/dates";
 import EditBidOpportunityDialog from "@/components/admin/EditBidOpportunityDialog";
-import { createBidOpportunity } from "@/lib/classService";
-import { Trash2, AlertTriangle, Users, Coins, Calendar as CalendarIcon, Settings, Plus, Edit, Eye, EyeOff, Loader2, Info } from "lucide-react";
-import { format } from "date-fns";
+import BidOpportunityManager from "@/components/admin/BidOpportunityManager";
+import { Trash2, AlertTriangle, Users, Coins, Calendar, Settings, Plus, Edit, Info, Eye, EyeOff } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
 
 interface DashboardProps {
   classes: ClassConfig[];
@@ -45,103 +41,21 @@ const Dashboard = ({
   onOpportunityDeleted
 }: DashboardProps) => {
   const { toast } = useToast();
+  const [selectedOpportunityId, setSelectedOpportunityId] = useState<string | null>(null);
   const [editingOpportunity, setEditingOpportunity] = useState<BidOpportunity | null>(null);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [showRemoveConfirmDialog, setShowRemoveConfirmDialog] = useState(false);
-  const [showCreateOpportunityDialog, setShowCreateOpportunityDialog] = useState(false);
-  const [showDeleteConfirmDialog, setShowDeleteConfirmDialog] = useState(false);
-  const [opportunityToDelete, setOpportunityToDelete] = useState<BidOpportunity | null>(null);
-  const [expandedOpportunityId, setExpandedOpportunityId] = useState<string | null>(null);
+  const [showOpportunityManager, setShowOpportunityManager] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmDelete, setConfirmDelete] = useState("");
   
-  // Form state for creating new opportunity
-  const [isCreating, setIsCreating] = useState(false);
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [eventDate, setEventDate] = useState<Date | undefined>(undefined);
-  const [bidOpenDate, setBidOpenDate] = useState<Date | undefined>(undefined);
-  const [capacity, setCapacity] = useState(currentClass?.capacity || 7);
-  
-  const resetForm = () => {
-    setTitle("");
-    setDescription("");
-    setEventDate(undefined);
-    setBidOpenDate(undefined);
-    setCapacity(currentClass?.capacity || 7);
-  };
-  
-  const handleCreateOpportunity = async () => {
-    if (!currentClass || !title || !description || !eventDate || !bidOpenDate) {
-      toast({
-        title: "Missing information",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setIsCreating(true);
-    
-    try {
-      const newOpportunity = await createBidOpportunity(currentClass.id, {
-        title,
-        description,
-        event_date: eventDate.toISOString(),
-        opens_at: bidOpenDate.toISOString(),
-        closes_at: eventDate.toISOString(),
-        capacity
-      });
-      
-      if (onOpportunityCreated) {
-        onOpportunityCreated(newOpportunity);
-      }
-      
-      toast({
-        title: "Opportunity created",
-        description: "The bidding opportunity has been created successfully",
-      });
-      
-      resetForm();
-      setShowCreateOpportunityDialog(false);
-    } catch (error) {
-      console.error("Error creating opportunity:", error);
-      toast({
-        title: "Failed to create opportunity",
-        description: error instanceof Error ? error.message : "An unexpected error occurred",
-        variant: "destructive",
-      });
-    } finally {
-      setIsCreating(false);
-    }
-  };
+  // Get the selected opportunity if there is one
+  const selectedOpportunity = currentClass?.bidOpportunities?.find(
+    opp => opp.id === selectedOpportunityId
+  );
   
   const handleEditOpportunity = (opportunity: BidOpportunity) => {
     setEditingOpportunity(opportunity);
-  };
-  
-  const handleDeleteOpportunity = (opportunity: BidOpportunity) => {
-    setOpportunityToDelete(opportunity);
-    setShowDeleteConfirmDialog(true);
-  };
-
-  const confirmDeleteOpportunity = () => {
-    if (opportunityToDelete && onOpportunityDeleted) {
-      onOpportunityDeleted(opportunityToDelete.id);
-      setShowDeleteConfirmDialog(false);
-      setOpportunityToDelete(null);
-      
-      toast({
-        title: "Opportunity deleted",
-        description: `${opportunityToDelete.title} has been removed successfully`,
-      });
-    }
-  };
-
-  const toggleOpportunityDetails = (opportunityId: string) => {
-    setExpandedOpportunityId(
-      expandedOpportunityId === opportunityId ? null : opportunityId
-    );
   };
   
   const handleSaveOpportunity = (updatedOpportunity: BidOpportunity, updatedClass: Partial<ClassConfig>) => {
@@ -291,15 +205,15 @@ const Dashboard = ({
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Capacity</CardTitle>
-            <CalendarIcon className="h-4 w-4 text-purple-500" />
+            <CardTitle className="text-sm font-medium">Default Capacity</CardTitle>
+            <Calendar className="h-4 w-4 text-purple-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-600">
               {currentClass.capacity}
             </div>
             <p className="text-xs text-muted-foreground">
-              Max students per event
+              Default max students
             </p>
           </CardContent>
         </Card>
@@ -331,7 +245,7 @@ const Dashboard = ({
         </CardContent>
       </Card>
 
-      {/* Unified Bidding Opportunities Section */}
+      {/* Bidding Opportunities Section */}
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -339,7 +253,7 @@ const Dashboard = ({
             <p className="text-muted-foreground">Manage bidding opportunities for {currentClass.className}</p>
           </div>
           <Button 
-            onClick={() => setShowCreateOpportunityDialog(true)}
+            onClick={() => setShowOpportunityManager(true)}
             className="flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
@@ -366,169 +280,163 @@ const Dashboard = ({
                   </TableHeader>
                   <TableBody>
                     {currentClass.bidOpportunities.map((opportunity) => (
-                      <>
-                        <TableRow 
-                          key={opportunity.id}
-                          className={expandedOpportunityId === opportunity.id ? "bg-academy-lightBlue/10" : ""}
-                        >
-                          <TableCell className="font-medium">{opportunity.title}</TableCell>
-                          <TableCell>{currentClass.capacity}</TableCell>
-                          <TableCell>{formatDate(opportunity.date)}</TableCell>
-                          <TableCell>{opportunity.bidOpenDate ? formatDate(opportunity.bidOpenDate) : "1 week before"}</TableCell>
-                          <TableCell>
-                            <Badge variant={getBidOpportunityStatus(opportunity) === "Open for Bidding" ? "default" : "secondary"}>
-                              {getBidOpportunityStatus(opportunity)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{opportunity.bidders.length}</TableCell>
-                          <TableCell>{opportunity.selectedStudents?.length || 0}</TableCell>
-                          <TableCell>
-                            <div className="flex space-x-2">
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                onClick={() => toggleOpportunityDetails(opportunity.id)}
-                                className="flex items-center gap-1"
-                              >
-                                {expandedOpportunityId === opportunity.id ? (
-                                  <>
-                                    <EyeOff className="w-4 h-4" />
-                                    Hide Details
-                                  </>
-                                ) : (
-                                  <>
-                                    <Eye className="w-4 h-4" />
-                                    View Details
-                                  </>
-                                )}
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEditOpportunity(opportunity);
-                                }}
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              <Button 
-                                variant="destructive" 
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteOpportunity(opportunity);
-                                }}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-
-                        {/* Student Overview Section - Only shown when expanded */}
-                        {expandedOpportunityId === opportunity.id && (
-                          <TableRow>
-                            <TableCell colSpan={8} className="p-0">
-                              <div className="bg-blue-50/50 border-l-4 border-l-academy-blue p-6">
-                                <h3 className="text-lg font-semibold mb-4 text-academy-blue flex items-center gap-2">
-                                  <Info className="w-5 h-5" />
-                                  Student Overview: {opportunity.title}
-                                </h3>
-                                
-                                {/* Opportunity Description */}
-                                <div className="mb-6 p-4 bg-white rounded-md border border-blue-100">
-                                  <h4 className="text-sm font-medium text-gray-700 mb-2">Description:</h4>
-                                  <p className="text-gray-600">{opportunity.description}</p>
-                                </div>
-                                
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                  {/* Active Bidders */}
-                                  <Card>
-                                    <CardHeader>
-                                      <CardTitle className="flex items-center gap-2 text-base">
-                                        <Users className="w-5 h-5" />
-                                        Active Bidders
-                                      </CardTitle>
-                                      <CardDescription>
-                                        Students who have placed bids for this opportunity
-                                      </CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                      {opportunity.bidders.length === 0 ? (
-                                        <div className="text-center py-4">
-                                          <Users className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                                          <p className="text-muted-foreground">No bids placed yet</p>
-                                        </div>
-                                      ) : (
-                                        <div className="space-y-3 max-h-40 overflow-y-auto">
-                                          {opportunity.bidders.map((student) => (
-                                            <div key={student.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                              <div>
-                                                <div className="font-medium">{student.name}</div>
-                                                <div className="text-sm text-muted-foreground">{student.email}</div>
-                                              </div>
-                                              <Badge variant="outline">Bidder</Badge>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      )}
-                                    </CardContent>
-                                  </Card>
-                                  
-                                  {/* Selected Students */}
-                                  <Card>
-                                    <CardHeader>
-                                      <CardTitle className="flex items-center gap-2 text-base">
-                                        <Users className="w-5 h-5 text-green-600" />
-                                        Selected Students
-                                      </CardTitle>
-                                      <CardDescription>
-                                        Students who were selected for this opportunity
-                                      </CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                      {opportunity.selectedStudents?.length === 0 || !opportunity.selectedStudents ? (
-                                        <div className="text-center py-4">
-                                          <Users className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                                          <p className="text-muted-foreground">No students selected yet</p>
-                                        </div>
-                                      ) : (
-                                        <div className="space-y-3 max-h-40 overflow-y-auto">
-                                          {opportunity.selectedStudents.map((student) => (
-                                            <div key={student.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
-                                              <div>
-                                                <div className="font-medium">{student.name}</div>
-                                                <div className="text-sm text-muted-foreground">{student.email}</div>
-                                              </div>
-                                              <Badge className="bg-green-500">Selected</Badge>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      )}
-                                    </CardContent>
-                                  </Card>
-                                </div>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </>
+                      <TableRow 
+                        key={opportunity.id}
+                        className={selectedOpportunityId === opportunity.id ? "bg-academy-lightBlue/10" : ""}
+                      >
+                        <TableCell className="font-medium">{opportunity.title}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {opportunity.capacity || currentClass.capacity} students
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{formatDate(opportunity.date)}</TableCell>
+                        <TableCell>{opportunity.bidOpenDate ? formatDate(opportunity.bidOpenDate) : "1 week before"}</TableCell>
+                        <TableCell>
+                          <Badge variant={getBidOpportunityStatus(opportunity) === "Open for Bidding" ? "default" : "secondary"}>
+                            {getBidOpportunityStatus(opportunity)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{opportunity.bidders.length}</TableCell>
+                        <TableCell>{opportunity.selectedStudents?.length || 0}</TableCell>
+                        <TableCell>
+                          <div className="flex space-x-2">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => setSelectedOpportunityId(
+                                selectedOpportunityId === opportunity.id ? null : opportunity.id
+                              )}
+                              className="flex items-center gap-1"
+                            >
+                              {selectedOpportunityId === opportunity.id ? (
+                                <>
+                                  <EyeOff className="w-4 h-4" />
+                                  Hide Details
+                                </>
+                              ) : (
+                                <>
+                                  <Eye className="w-4 h-4" />
+                                  View Details
+                                </>
+                              )}
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditOpportunity(opportunity);
+                              }}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </CardContent>
             </Card>
+
+            {/* Selected Opportunity Details */}
+            {selectedOpportunity && (
+              <Card className="border-l-4 border-l-academy-blue bg-blue-50/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Info className="w-5 h-5 text-academy-blue" />
+                    Opportunity Details: {selectedOpportunity.title}
+                  </CardTitle>
+                  <CardDescription>
+                    Detailed information for the selected bidding opportunity
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <Label className="text-sm font-medium text-gray-600">Description</Label>
+                      <div className="mt-2 p-3 bg-white rounded-md border">
+                        <p className="text-gray-800">{selectedOpportunity.description}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-gray-600">Event Details</Label>
+                      <div className="mt-2 space-y-3">
+                        <div className="flex justify-between items-center p-2 bg-white rounded border">
+                          <span className="text-sm text-gray-600">Event Date:</span>
+                          <span className="font-medium">{formatDate(selectedOpportunity.date)}</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 bg-white rounded border">
+                          <span className="text-sm text-gray-600">Bidding Opens:</span>
+                          <span className="font-medium">
+                            {selectedOpportunity.bidOpenDate ? formatDate(selectedOpportunity.bidOpenDate) : "1 week before"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 bg-white rounded border">
+                          <span className="text-sm text-gray-600">Student Capacity:</span>
+                          <span className="font-medium text-purple-600">
+                            {selectedOpportunity.capacity || currentClass.capacity} students
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 bg-white rounded border">
+                          <span className="text-sm text-gray-600">Current Bidders:</span>
+                          <span className="font-medium text-blue-600">{selectedOpportunity.bidders.length} students</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 bg-white rounded border">
+                          <span className="text-sm text-gray-600">Status:</span>
+                          <Badge variant={getBidOpportunityStatus(selectedOpportunity) === "Open for Bidding" ? "default" : "secondary"}>
+                            {getBidOpportunityStatus(selectedOpportunity)}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Capacity Status Indicator */}
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <Label className="text-sm font-medium text-gray-600">Capacity Status</Label>
+                      <span className="text-sm text-gray-500">
+                        {selectedOpportunity.bidders.length} / {selectedOpportunity.capacity || currentClass.capacity} students
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className={`h-2 rounded-full transition-all duration-300 ${
+                          selectedOpportunity.bidders.length > (selectedOpportunity.capacity || currentClass.capacity)
+                            ? 'bg-red-500' 
+                            : selectedOpportunity.bidders.length === (selectedOpportunity.capacity || currentClass.capacity)
+                            ? 'bg-yellow-500'
+                            : 'bg-green-500'
+                        }`}
+                        style={{ 
+                          width: `${Math.min((selectedOpportunity.bidders.length / (selectedOpportunity.capacity || currentClass.capacity)) * 100, 100)}%` 
+                        }}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {selectedOpportunity.bidders.length > (selectedOpportunity.capacity || currentClass.capacity)
+                        ? `${selectedOpportunity.bidders.length - (selectedOpportunity.capacity || currentClass.capacity)} students over capacity - random selection will be required`
+                        : selectedOpportunity.bidders.length === (selectedOpportunity.capacity || currentClass.capacity)
+                        ? "At full capacity - all bidders can be selected"
+                        : `${(selectedOpportunity.capacity || currentClass.capacity) - selectedOpportunity.bidders.length} spots remaining`
+                      }
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         ) : (
           <Card>
             <CardContent className="p-8 text-center">
-              <CalendarIcon className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+              <Calendar className="w-12 h-12 mx-auto text-gray-400 mb-4" />
               <h3 className="text-lg font-semibold mb-2">No Bidding Opportunities</h3>
               <p className="text-muted-foreground mb-4">
                 Create your first bidding opportunity to get started.
               </p>
-              <Button onClick={() => setShowCreateOpportunityDialog(true)}>
+              <Button onClick={() => setShowOpportunityManager(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Create First Opportunity
               </Button>
@@ -537,121 +445,148 @@ const Dashboard = ({
         )}
       </div>
 
-      {/* Create New Opportunity Dialog */}
-      <Dialog open={showCreateOpportunityDialog} onOpenChange={setShowCreateOpportunityDialog}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Create New Bidding Opportunity</DialogTitle>
-            <DialogDescription>
-              Add a new bidding opportunity for students to participate in
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
-              <Input
-                id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g., Dinner with Professor - Week 1"
-                disabled={isCreating}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe the opportunity in detail"
-                rows={3}
-                disabled={isCreating}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Event Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start text-left font-normal"
-                    disabled={isCreating}
-                  >
-                    {eventDate ? format(eventDate, "PPP") : <span>Pick the event date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={eventDate}
-                    onSelect={setEventDate}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Bidding Opens Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start text-left font-normal"
-                    disabled={isCreating}
-                  >
-                    {bidOpenDate ? format(bidOpenDate, "PPP") : <span>Pick when bidding opens</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={bidOpenDate}
-                    onSelect={setBidOpenDate}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              <p className="text-xs text-muted-foreground">
-                This is when students can start bidding for this opportunity
-              </p>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="capacity">Capacity</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="capacity"
-                  type="number"
-                  min={1}
-                  max={100}
-                  value={capacity}
-                  onChange={(e) => setCapacity(parseInt(e.target.value) || 1)}
-                  disabled={isCreating}
-                />
-                <span className="text-sm text-muted-foreground">students</span>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreateOpportunityDialog(false)} disabled={isCreating}>
-              Cancel
-            </Button>
-            <Button onClick={handleCreateOpportunity} disabled={isCreating}>
-              {isCreating ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creating...
-                </>
+      {/* Student Overview Section */}
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-heading font-bold">Student Overview</h2>
+          <p className="text-muted-foreground">Current bidding activity and selections</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                Active Bidders
+              </CardTitle>
+              <CardDescription>
+                {selectedOpportunity 
+                  ? `Students who have placed bids for ${selectedOpportunity.title}`
+                  : `Students who have placed bids for any opportunity`}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {selectedOpportunity ? (
+                selectedOpportunity.bidders.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Users className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                    <p className="text-muted-foreground">No bids placed yet for this opportunity</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-60 overflow-y-auto">
+                    {selectedOpportunity.bidders.map((student) => (
+                      <div key={student.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                          <div className="font-medium">{student.name}</div>
+                          <div className="text-sm text-muted-foreground">{student.email}</div>
+                        </div>
+                        <Badge variant="outline">Bidder</Badge>
+                      </div>
+                    ))}
+                  </div>
+                )
               ) : (
-                "Create Opportunity"
+                currentClass.bidders.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Users className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                    <p className="text-muted-foreground">No bids placed yet for any opportunity</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-60 overflow-y-auto">
+                    {currentClass.bidders.map((student) => (
+                      <div key={student.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                          <div className="font-medium">{student.name}</div>
+                          <div className="text-sm text-muted-foreground">{student.email}</div>
+                        </div>
+                        <Badge variant="outline">Bidder</Badge>
+                      </div>
+                    ))}
+                  </div>
+                )
               )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-green-600" />
+                Selected Students
+              </CardTitle>
+              <CardDescription>
+                {selectedOpportunity 
+                  ? `Students who were selected for ${selectedOpportunity.title}`
+                  : `Students who were selected for the current reward`}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {selectedOpportunity ? (
+                selectedOpportunity.selectedStudents?.length === 0 || !selectedOpportunity.selectedStudents ? (
+                  <div className="text-center py-8">
+                    <Users className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                    <p className="text-muted-foreground">No students have been selected yet for this opportunity</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-60 overflow-y-auto">
+                    {selectedOpportunity.selectedStudents.map((student) => (
+                      <div key={student.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                        <div>
+                          <div className="font-medium">{student.name}</div>
+                          <div className="text-sm text-muted-foreground">{student.email}</div>
+                        </div>
+                        <Badge className="bg-green-500">Selected</Badge>
+                      </div>
+                    ))}
+                  </div>
+                )
+              ) : (
+                currentClass.selectedStudents?.length === 0 || !currentClass.selectedStudents ? (
+                  <div className="text-center py-8">
+                    <Users className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                    <p className="text-muted-foreground">No students have been selected yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-60 overflow-y-auto">
+                    {currentClass.selectedStudents.map((student) => (
+                      <div key={student.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                        <div>
+                          <div className="font-medium">{student.name}</div>
+                          <div className="text-sm text-muted-foreground">{student.email}</div>
+                        </div>
+                        <Badge className="bg-green-500">Selected</Badge>
+                      </div>
+                    ))}
+                  </div>
+                )
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Opportunity Manager Dialog */}
+      {showOpportunityManager && (
+        <Dialog open={showOpportunityManager} onOpenChange={setShowOpportunityManager}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Manage Bidding Opportunities</DialogTitle>
+              <DialogDescription>
+                Create and manage bidding opportunities for {currentClass.className}
+              </DialogDescription>
+            </DialogHeader>
+            <BidOpportunityManager
+              currentClass={currentClass}
+              onOpportunityCreated={(opportunity) => {
+                onOpportunityCreated?.(opportunity);
+                setShowOpportunityManager(false);
+              }}
+              onOpportunityDeleted={onOpportunityDeleted || (() => {})}
+              onEditOpportunity={handleEditOpportunity}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Edit Bid Opportunity Dialog */}
       {editingOpportunity && (
@@ -663,49 +598,6 @@ const Dashboard = ({
           onSave={handleSaveOpportunity}
         />
       )}
-
-      {/* Delete Opportunity Confirmation Dialog */}
-      <Dialog open={showDeleteConfirmDialog} onOpenChange={setShowDeleteConfirmDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Trash2 className="h-5 w-5 text-destructive" />
-              Delete Bidding Opportunity
-            </DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete "{opportunityToDelete?.title}"? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              <strong>WARNING:</strong> Deleting this opportunity will also remove:
-              <ul className="list-disc list-inside mt-2 space-y-1">
-                <li>All bids placed for this opportunity ({opportunityToDelete?.bidders.length || 0} bids)</li>
-                <li>Any selection results for this opportunity</li>
-                <li>Associated token history records</li>
-              </ul>
-            </AlertDescription>
-          </Alert>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setShowDeleteConfirmDialog(false);
-              setOpportunityToDelete(null);
-            }}>
-              Cancel
-            </Button>
-            <Button 
-              variant="destructive" 
-              onClick={confirmDeleteOpportunity}
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete Opportunity
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Change Password Dialog */}
       <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>

@@ -36,7 +36,9 @@ const EditBidOpportunityDialog = ({
   const [biddingOpenDate, setBiddingOpenDate] = useState<Date | undefined>(
     opportunity ? addDays(new Date(opportunity.date), -7) : undefined
   );
-  const [capacity, setCapacity] = useState(currentClass?.capacity || 7);
+  const [capacity, setCapacity] = useState(opportunity?.capacity || currentClass?.capacity || 7);
+  const [rewardTitle, setRewardTitle] = useState(currentClass?.rewardTitle || "");
+  const [rewardDescription, setRewardDescription] = useState(currentClass?.rewardDescription || "");
   const [isSaving, setIsSaving] = useState(false);
   
   const { toast } = useToast();
@@ -60,7 +62,9 @@ const EditBidOpportunityDialog = ({
       // Update the class configuration in the database
       await updateClass(currentClass.id, {
         name: currentClass.className, // Keep existing name
-        capacity
+        capacity: currentClass.capacity, // Keep existing default capacity
+        // Note: rewardTitle and rewardDescription are not stored in the database
+        // They are hardcoded in the application
       });
 
       // Create updated objects for local state
@@ -69,11 +73,14 @@ const EditBidOpportunityDialog = ({
         title,
         description,
         date: date.toISOString(),
-        bidOpenDate: biddingOpenDate.toISOString()
+        bidOpenDate: biddingOpenDate.toISOString(),
+        capacity
       };
 
       const updatedClass: Partial<ClassConfig> = {
-        capacity
+        rewardTitle,
+        rewardDescription,
+        capacity: currentClass.capacity // Keep the class default capacity unchanged
       };
       
       // Update local state
@@ -81,7 +88,7 @@ const EditBidOpportunityDialog = ({
       
       toast({
         title: "Changes saved successfully",
-        description: "The bidding opportunity configuration has been updated.",
+        description: "The bidding opportunity has been updated.",
       });
       
       onClose();
@@ -180,9 +187,9 @@ const EditBidOpportunityDialog = ({
                 This is the date when students can start bidding for this opportunity
               </p>
             </div>
-            
+
             <div className="space-y-2">
-              <Label htmlFor="capacity">Capacity</Label>
+              <Label htmlFor="capacity">Capacity for this Opportunity</Label>
               <div className="flex items-center gap-2">
                 <Input
                   id="capacity"
@@ -195,6 +202,9 @@ const EditBidOpportunityDialog = ({
                 />
                 <span className="text-sm text-muted-foreground">students</span>
               </div>
+              <p className="text-xs text-muted-foreground">
+                This overrides the class default capacity ({currentClass?.capacity}) for this specific opportunity
+              </p>
             </div>
           </div>
         </div>

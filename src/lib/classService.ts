@@ -308,10 +308,10 @@ export const createBidOpportunity = async (
       bidOpenDate: opportunityRecord.opens_at,
       title: opportunityData.title,
       description: opportunityRecord.description,
-      capacity: opportunityRecord.capacity || 7,
       bidders: [],
       selectedStudents: [],
-      isOpen: false
+      isOpen: false,
+      capacity: opportunityRecord.capacity
     }
 
     return bidOpportunity
@@ -378,10 +378,10 @@ export const fetchClasses = async (): Promise<ClassConfig[]> => {
         bidOpenDate: opp.opens_at,
         title: `Bidding Opportunity - ${new Date(opp.event_date).toLocaleDateString()}`,
         description: opp.description,
-        capacity: opp.capacity || classRecord.capacity_default || 7,
         bidders: [], // This would need to be fetched from bids table
         selectedStudents: [], // This would need to be fetched from selections table
-        isOpen: opp.status === 'open'
+        isOpen: opp.status === 'open',
+        capacity: opp.capacity
       }))
 
       const classConfig: ClassConfig = {
