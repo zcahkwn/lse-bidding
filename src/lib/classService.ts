@@ -429,7 +429,7 @@ export const updateClass = async (classId: string, updates: Partial<CreateClassD
   }
 }
 
-// Update bidding opportunity
+// Update bidding opportunity - FIXED VERSION
 export const updateBidOpportunity = async (
   opportunityId: string, 
   updates: {
@@ -442,8 +442,12 @@ export const updateBidOpportunity = async (
   }
 ): Promise<void> => {
   try {
+    console.log('Updating opportunity:', opportunityId, 'with data:', updates)
+    
     const updateData: any = {}
     
+    // FIXED: Now properly handling the title field
+    if (updates.title) updateData.title = updates.title
     if (updates.description) updateData.description = updates.description
     if (updates.event_date) {
       updateData.event_date = new Date(updates.event_date).toISOString().split('T')[0]
@@ -452,14 +456,20 @@ export const updateBidOpportunity = async (
     if (updates.opens_at) updateData.opens_at = updates.opens_at
     if (updates.capacity !== undefined) updateData.capacity = updates.capacity
 
-    const { error } = await supabase
+    console.log('Sending update data to Supabase:', updateData)
+
+    const { data, error } = await supabase
       .from('opportunities')
       .update(updateData)
       .eq('id', opportunityId)
+      .select() // Add select to get the updated record back
 
     if (error) {
+      console.error('Supabase update error:', error)
       throw new Error(`Failed to update opportunity: ${error.message}`)
     }
+
+    console.log('Successfully updated opportunity:', data)
   } catch (error) {
     console.error('Error updating opportunity:', error)
     throw error
@@ -469,14 +479,19 @@ export const updateBidOpportunity = async (
 // Delete a bidding opportunity
 export const deleteBidOpportunity = async (opportunityId: string): Promise<void> => {
   try {
+    console.log('Deleting opportunity:', opportunityId)
+    
     const { error } = await supabase
       .from('opportunities')
       .delete()
       .eq('id', opportunityId)
 
     if (error) {
+      console.error('Supabase delete error:', error)
       throw new Error(`Failed to delete opportunity: ${error.message}`)
     }
+
+    console.log('Successfully deleted opportunity:', opportunityId)
   } catch (error) {
     console.error('Error deleting opportunity:', error)
     throw error
