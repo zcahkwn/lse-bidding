@@ -6,14 +6,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { ClassConfig, BidOpportunity } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { formatDate, getBidOpportunityStatus } from "@/utils/dates";
 import EditBidOpportunityDialog from "@/components/admin/EditBidOpportunityDialog";
-import BidOpportunityManager from "@/components/admin/BidOpportunityManager";
-import { Trash2, AlertTriangle, Users, Coins, Calendar, Settings, Plus, Edit, Eye, EyeOff } from "lucide-react";
+import { createBidOpportunity } from "@/lib/classService";
+import { Trash2, AlertTriangle, Users, Coins, Calendar as CalendarIcon, Settings, Plus, Edit, Eye, EyeOff, Loader2 } from "lucide-react";
+import { format } from "date-fns";
 
 interface DashboardProps {
   classes: ClassConfig[];
@@ -44,12 +48,73 @@ const Dashboard = ({
   const [editingOpportunity, setEditingOpportunity] = useState<BidOpportunity | null>(null);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [showRemoveConfirmDialog, setShowRemoveConfirmDialog] = useState(false);
-  const [showOpportunityManager, setShowOpportunityManager] = useState(false);
+  const [showCreateOpportunityDialog, setShowCreateOpportunityDialog] = useState(false);
   const [showDeleteConfirmDialog, setShowDeleteConfirmDialog] = useState(false);
   const [opportunityToDelete, setOpportunityToDelete] = useState<BidOpportunity | null>(null);
   const [expandedOpportunityId, setExpandedOpportunityId] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [confirmDelete, setConfirmDelete] = useState("");
+  
+  // Form state for creating new opportunity
+  const [isCreating, setIsCreating] = useState(false);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [eventDate, setEventDate] = useState<Date | undefined>(undefined);
+  const [bidOpenDate, setBidOpenDate] = useState<Date | undefined>(undefined);
+  const [capacity, setCapacity] = useState(currentClass?.capacity || 7);
+  
+  const resetForm = () => {
+    setTitle("");
+    setDescription("");
+    setEventDate(undefined);
+    setBidOpenDate(undefined);
+    setCapacity(currentClass?.capacity || 7);
+  };
+  
+  const handleCreateOpportunity = async () => {
+    if (!currentClass || !title || !description || !eventDate || !bidOpenDate) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsCreating(true);
+    
+    try {
+      const newOpportunity = await createBidOpportunity(currentClass.id, {
+        title,
+        description,
+        event_date: eventDate.toISOString(),
+        opens_at: bidOpenDate.toISOString(),
+        closes_at: eventDate.toISOString(),
+        capacity
+      });
+      
+      if (onOpportunityCreated) {
+        onOpportunityCreated(newOpportunity);
+      }
+      
+      toast({
+        title: "Opportunity created",
+        description: "The bidding opportunity has been created successfully",
+      });
+      
+      resetForm();
+      setShowCreateOpportunityDialog(false);
+    } catch (error) {
+      console.error("Error creating opportunity:", error);
+      toast({
+        title: "Failed to create opportunity",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreating(false);
+    }
+  };
   
   const handleEditOpportunity = (opportunity: BidOpportunity) => {
     setEditingOpportunity(opportunity);
@@ -227,7 +292,7 @@ const Dashboard = ({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Capacity</CardTitle>
-            <Calendar className="h-4 w-4 text-purple-500" />
+            <CalendarIcon className="h-4 w-4 text-purple-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-600">
@@ -274,7 +339,7 @@ const Dashboard = ({
             <p className="text-muted-foreground">Manage bidding opportunities for {currentClass.className}</p>
           </div>
           <Button 
-            onClick={() => setShowOpportunityManager(true)}
+            onClick={() => setShowCreateOpportunityDialog(true)}
             className="flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
@@ -449,12 +514,12 @@ const Dashboard = ({
         ) : (
           <Card>
             <CardContent className="p-8 text-center">
-              <Calendar className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+              <CalendarIcon className="w-12 h-12 mx-auto text-gray-400 mb-4" />
               <h3 className="text-lg font-semibold mb-2">No Bidding Opportunities</h3>
               <p className="text-muted-foreground mb-4">
                 Create your first bidding opportunity to get started.
               </p>
-              <Button onClick={() => setShowOpportunityManager(true)}>
+              <Button onClick={() => setShowCreateOpportunityDialog(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Create First Opportunity
               </Button>
@@ -463,28 +528,121 @@ const Dashboard = ({
         )}
       </div>
 
-      {/* Opportunity Manager Dialog */}
-      {showOpportunityManager && (
-        <Dialog open={showOpportunityManager} onOpenChange={setShowOpportunityManager}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Manage Bidding Opportunities</DialogTitle>
-              <DialogDescription>
-                Create and manage bidding opportunities for {currentClass.className}
-              </DialogDescription>
-            </DialogHeader>
-            <BidOpportunityManager
-              currentClass={currentClass}
-              onOpportunityCreated={(opportunity) => {
-                onOpportunityCreated?.(opportunity);
-                setShowOpportunityManager(false);
-              }}
-              onOpportunityDeleted={onOpportunityDeleted || (() => {})}
-              onEditOpportunity={handleEditOpportunity}
-            />
-          </DialogContent>
-        </Dialog>
-      )}
+      {/* Create New Opportunity Dialog */}
+      <Dialog open={showCreateOpportunityDialog} onOpenChange={setShowCreateOpportunityDialog}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create New Bidding Opportunity</DialogTitle>
+            <DialogDescription>
+              Add a new bidding opportunity for students to participate in
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Title</Label>
+              <Input
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g., Dinner with Professor - Week 1"
+                disabled={isCreating}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Describe the opportunity in detail"
+                rows={3}
+                disabled={isCreating}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Event Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left font-normal"
+                    disabled={isCreating}
+                  >
+                    {eventDate ? format(eventDate, "PPP") : <span>Pick the event date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={eventDate}
+                    onSelect={setEventDate}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Bidding Opens Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left font-normal"
+                    disabled={isCreating}
+                  >
+                    {bidOpenDate ? format(bidOpenDate, "PPP") : <span>Pick when bidding opens</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={bidOpenDate}
+                    onSelect={setBidOpenDate}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              <p className="text-xs text-muted-foreground">
+                This is when students can start bidding for this opportunity
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="capacity">Capacity</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="capacity"
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={capacity}
+                  onChange={(e) => setCapacity(parseInt(e.target.value) || 1)}
+                  disabled={isCreating}
+                />
+                <span className="text-sm text-muted-foreground">students</span>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateOpportunityDialog(false)} disabled={isCreating}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateOpportunity} disabled={isCreating}>
+              {isCreating ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Create Opportunity"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Bid Opportunity Dialog */}
       {editingOpportunity && (
