@@ -36,8 +36,6 @@ const EditBidOpportunityDialog = ({
   const [biddingOpenDate, setBiddingOpenDate] = useState<Date | undefined>(
     opportunity ? addDays(new Date(opportunity.date), -7) : undefined
   );
-  const [rewardTitle, setRewardTitle] = useState(currentClass?.rewardTitle || "");
-  const [rewardDescription, setRewardDescription] = useState(currentClass?.rewardDescription || "");
   const [capacity, setCapacity] = useState(currentClass?.capacity || 7);
   const [isSaving, setIsSaving] = useState(false);
   
@@ -62,9 +60,7 @@ const EditBidOpportunityDialog = ({
       // Update the class configuration in the database
       await updateClass(currentClass.id, {
         name: currentClass.className, // Keep existing name
-        capacity,
-        // Note: rewardTitle and rewardDescription are not stored in the database
-        // They are hardcoded in the application
+        capacity
       });
 
       // Create updated objects for local state
@@ -77,8 +73,6 @@ const EditBidOpportunityDialog = ({
       };
 
       const updatedClass: Partial<ClassConfig> = {
-        rewardTitle,
-        rewardDescription,
         capacity
       };
       
@@ -87,7 +81,7 @@ const EditBidOpportunityDialog = ({
       
       toast({
         title: "Changes saved successfully",
-        description: "The bidding opportunity and reward configuration have been updated.",
+        description: "The bidding opportunity configuration has been updated.",
       });
       
       onClose();
@@ -107,9 +101,9 @@ const EditBidOpportunityDialog = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit Bidding Opportunity & Reward</DialogTitle>
+          <DialogTitle>Edit Bidding Opportunity</DialogTitle>
           <DialogDescription>
-            Modify the details for this bidding opportunity and the reward configuration
+            Modify the details for this bidding opportunity
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-6 py-4">
@@ -185,34 +179,6 @@ const EditBidOpportunityDialog = ({
               <p className="text-xs text-muted-foreground">
                 This is the date when students can start bidding for this opportunity
               </p>
-            </div>
-          </div>
-
-          {/* Reward Configuration */}
-          <div className="space-y-4 border-t pt-4">
-            <h3 className="text-lg font-medium">Reward Configuration</h3>
-            
-            <div className="space-y-2">
-              <Label htmlFor="rewardTitle">Reward Title</Label>
-              <Input
-                id="rewardTitle"
-                value={rewardTitle}
-                onChange={(e) => setRewardTitle(e.target.value)}
-                placeholder="e.g., Dinner with Professor"
-                disabled={isSaving}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="rewardDescription">Reward Description</Label>
-              <Textarea
-                id="rewardDescription"
-                value={rewardDescription}
-                onChange={(e) => setRewardDescription(e.target.value)}
-                placeholder="Describe the reward in detail"
-                rows={3}
-                disabled={isSaving}
-              />
             </div>
             
             <div className="space-y-2">
