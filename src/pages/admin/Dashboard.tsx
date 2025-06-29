@@ -3,18 +3,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { ClassConfig, BidOpportunity } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { formatDate, getBidOpportunityStatus } from "@/utils/dates";
 import EditBidOpportunityDialog from "@/components/admin/EditBidOpportunityDialog";
 import BidOpportunityManager from "@/components/admin/BidOpportunityManager";
 import { Trash2, AlertTriangle, Users, Coins, Calendar, Settings, Plus, Edit, Info, Eye, EyeOff } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
 
 interface DashboardProps {
   classes: ClassConfig[];
@@ -447,61 +446,6 @@ const Dashboard = ({
                       }
                     </p>
                   </div>
-
-                  {/* Bidders and Selected Students for this specific opportunity */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                    <div>
-                      <Label className="text-sm font-medium text-gray-600 flex items-center gap-2">
-                        <Users className="w-4 h-4" />
-                        Bidders for this Opportunity
-                      </Label>
-                      <div className="mt-2 max-h-40 overflow-y-auto">
-                        {selectedOpportunity.bidders.length === 0 ? (
-                          <div className="text-center py-4 text-gray-500 text-sm">
-                            No bids placed yet
-                          </div>
-                        ) : (
-                          <div className="space-y-2">
-                            {selectedOpportunity.bidders.map((student) => (
-                              <div key={student.id} className="flex items-center justify-between p-2 bg-white rounded border">
-                                <div>
-                                  <div className="font-medium text-sm">{student.name}</div>
-                                  <div className="text-xs text-gray-500">{student.email}</div>
-                                </div>
-                                <Badge variant="outline" className="text-xs">Bidder</Badge>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <Label className="text-sm font-medium text-gray-600 flex items-center gap-2">
-                        <Users className="w-4 h-4 text-green-600" />
-                        Selected for this Opportunity
-                      </Label>
-                      <div className="mt-2 max-h-40 overflow-y-auto">
-                        {selectedOpportunity.selectedStudents?.length === 0 || !selectedOpportunity.selectedStudents ? (
-                          <div className="text-center py-4 text-gray-500 text-sm">
-                            No students selected yet
-                          </div>
-                        ) : (
-                          <div className="space-y-2">
-                            {selectedOpportunity.selectedStudents.map((student) => (
-                              <div key={student.id} className="flex items-center justify-between p-2 bg-green-50 rounded border border-green-200">
-                                <div>
-                                  <div className="font-medium text-sm">{student.name}</div>
-                                  <div className="text-xs text-gray-500">{student.email}</div>
-                                </div>
-                                <Badge className="bg-green-500 text-xs">Selected</Badge>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
                 </CardContent>
               </Card>
             )}
@@ -521,6 +465,126 @@ const Dashboard = ({
             </CardContent>
           </Card>
         )}
+      </div>
+
+      {/* Student Overview Section */}
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-heading font-bold">Student Overview</h2>
+          <p className="text-muted-foreground">Current bidding activity and selections</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                Active Bidders
+              </CardTitle>
+              <CardDescription>
+                {selectedOpportunity 
+                  ? `Students who have placed bids for ${selectedOpportunity.title}`
+                  : `Students who have placed bids for any opportunity`}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {selectedOpportunity ? (
+                selectedOpportunity.bidders.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Users className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                    <p className="text-muted-foreground">No bids placed yet for this opportunity</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-60 overflow-y-auto">
+                    {selectedOpportunity.bidders.map((student) => (
+                      <div key={student.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                          <div className="font-medium">{student.name}</div>
+                          <div className="text-sm text-muted-foreground">{student.email}</div>
+                        </div>
+                        <Badge variant="outline">Bidder</Badge>
+                      </div>
+                    ))}
+                  </div>
+                )
+              ) : (
+                currentClass.bidders.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Users className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                    <p className="text-muted-foreground">No bids placed yet for any opportunity</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-60 overflow-y-auto">
+                    {currentClass.bidders.map((student) => (
+                      <div key={student.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                          <div className="font-medium">{student.name}</div>
+                          <div className="text-sm text-muted-foreground">{student.email}</div>
+                        </div>
+                        <Badge variant="outline">Bidder</Badge>
+                      </div>
+                    ))}
+                  </div>
+                )
+              )}
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-green-600" />
+                Selected Students
+              </CardTitle>
+              <CardDescription>
+                {selectedOpportunity 
+                  ? `Students who were selected for ${selectedOpportunity.title}`
+                  : `Students who were selected for the current reward`}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {selectedOpportunity ? (
+                selectedOpportunity.selectedStudents?.length === 0 || !selectedOpportunity.selectedStudents ? (
+                  <div className="text-center py-8">
+                    <Users className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                    <p className="text-muted-foreground">No students have been selected yet for this opportunity</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-60 overflow-y-auto">
+                    {selectedOpportunity.selectedStudents.map((student) => (
+                      <div key={student.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                        <div>
+                          <div className="font-medium">{student.name}</div>
+                          <div className="text-sm text-muted-foreground">{student.email}</div>
+                        </div>
+                        <Badge className="bg-green-500">Selected</Badge>
+                      </div>
+                    ))}
+                  </div>
+                )
+              ) : (
+                currentClass.selectedStudents?.length === 0 || !currentClass.selectedStudents ? (
+                  <div className="text-center py-8">
+                    <Users className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                    <p className="text-muted-foreground">No students have been selected yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-60 overflow-y-auto">
+                    {currentClass.selectedStudents.map((student) => (
+                      <div key={student.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                        <div>
+                          <div className="font-medium">{student.name}</div>
+                          <div className="text-sm text-muted-foreground">{student.email}</div>
+                        </div>
+                        <Badge className="bg-green-500">Selected</Badge>
+                      </div>
+                    ))}
+                  </div>
+                )
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Opportunity Manager Dialog */}
