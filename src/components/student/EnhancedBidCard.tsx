@@ -12,7 +12,7 @@ import { formatDate, getBidOpportunityStatus } from "@/utils/dates";
 interface EnhancedBidCardProps {
   student: Student;
   classConfig: ClassConfig;
-  onBidSubmitted?: (bidId: string, updatedStudent: Student) => void;
+  onBidSubmitted?: (bidId: string, updatedStudent: Student, opportunityId: string) => void;
 }
 
 const EnhancedBidCard = ({ student, classConfig, onBidSubmitted }: EnhancedBidCardProps) => {
@@ -31,7 +31,7 @@ const EnhancedBidCard = ({ student, classConfig, onBidSubmitted }: EnhancedBidCa
     });
 
     if (response.success && response.bidId && response.updatedStudent) {
-      onBidSubmitted?.(response.bidId, response.updatedStudent);
+      onBidSubmitted?.(response.bidId, response.updatedStudent, opportunityId);
     }
   };
 

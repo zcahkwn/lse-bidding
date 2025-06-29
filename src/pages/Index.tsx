@@ -323,22 +323,19 @@ const Index = () => {
     localStorage.setItem("classData", JSON.stringify(updatedClasses));
   };
   
-  const handlePlaceBid = (student: Student, opportunityId: string) => {
+  const handleBidSubmitted = (bidId: string, updatedStudent: Student, opportunityId: string) => {
     if (!currentClass || !auth.currentStudent) return;
-    
-    // Update the student's token usage status
-    const updatedStudent = { ...student, hasUsedToken: true, hasBid: true };
     
     // Update the student in the class's students list
     const updatedStudents = currentClass.students.map(s => 
-      s.id === student.id ? updatedStudent : s
+      s.id === updatedStudent.id ? updatedStudent : s
     );
     
     // Find the opportunity to update
     const updatedOpportunities = currentClass.bidOpportunities.map(opportunity => {
       if (opportunity.id === opportunityId) {
         // Add the student to this opportunity's bidders if not already there
-        const isAlreadyBidding = opportunity.bidders.some(b => b.id === student.id);
+        const isAlreadyBidding = opportunity.bidders.some(b => b.id === updatedStudent.id);
         const updatedBidders = isAlreadyBidding
           ? opportunity.bidders
           : [...opportunity.bidders, updatedStudent];
@@ -352,7 +349,7 @@ const Index = () => {
     });
     
     // Also update the class-level bidders for backward compatibility
-    const isAlreadyBidding = currentClass.bidders.some(b => b.id === student.id);
+    const isAlreadyBidding = currentClass.bidders.some(b => b.id === updatedStudent.id);
     const updatedBidders = isAlreadyBidding
       ? currentClass.bidders
       : [...currentClass.bidders, updatedStudent];
@@ -735,7 +732,7 @@ const Index = () => {
         <StudentDashboard 
           student={auth.currentStudent}
           classConfig={auth.currentClass}
-          onPlaceBid={handlePlaceBid}
+          onBidSubmitted={handleBidSubmitted}
           onLogout={handleLogout}
         />
       </div>

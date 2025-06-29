@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import BidCard from "@/components/student/BidCard";
+import EnhancedBidCard from "@/components/student/EnhancedBidCard";
 import { Student, ClassConfig, BidOpportunity } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { formatDate, getBidOpportunityStatus } from "@/utils/dates";
@@ -79,14 +79,7 @@ const StudentDashboard = () => {
     opportunity => opportunity.bidders && opportunity.bidders.some(bidder => bidder.id === student.id)
   );
   
-  const handlePlaceBid = (studentData: Student, opportunityId: string) => {
-    // Update student locally
-    const updatedStudent = {
-      ...studentData,
-      hasUsedToken: true,
-      hasBid: true
-    };
-    
+  const handleBidSubmitted = (bidId: string, updatedStudent: Student, opportunityId: string) => {
     // Get current classes from localStorage
     const storedClassesStr = localStorage.getItem("classData");
     if (storedClassesStr) {
@@ -270,10 +263,10 @@ const StudentDashboard = () => {
         </div>
         
         <div>
-          <BidCard 
+          <EnhancedBidCard 
             student={student}
             classConfig={classConfig}
-            onPlaceBid={handlePlaceBid}
+            onBidSubmitted={handleBidSubmitted}
           />
           
           <Card className="mt-6">
