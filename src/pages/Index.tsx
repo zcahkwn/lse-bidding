@@ -323,61 +323,117 @@ const Index = () => {
     localStorage.setItem("classData", JSON.stringify(updatedClasses));
   };
   
-  const handleBidSubmitted = (bidId: string, updatedStudent: Student, opportunityId: string) => {
+  const handleBidSubmitted = async (bidId: string, updatedStudent: Student, opportunityId: string) => {
     if (!currentClass || !auth.currentStudent) return;
     
-    // Update the student in the class's students list
-    const updatedStudents = currentClass.students.map(s => 
-      s.id === updatedStudent.id ? updatedStudent : s
-    );
-    
-    // Find the opportunity to update
-    const updatedOpportunities = currentClass.bidOpportunities.map(opportunity => {
-      if (opportunity.id === opportunityId) {
-        // Add the student to this opportunity's bidders if not already there
-        const isAlreadyBidding = opportunity.bidders.some(b => b.id === updatedStudent.id);
-        const updatedBidders = isAlreadyBidding
-          ? opportunity.bidders
-          : [...opportunity.bidders, updatedStudent];
+    try {
+      // Refresh the class data from the database to get the latest bid counts
+      const refreshedClasses = await fetchClasses();
+      const refreshedCurrentClass = refreshedClasses.find(c => c.id === currentClass.id);
+      
+      if (refreshedCurrentClass) {
+        // Update the student in the refreshed class's students list
+        const updatedStudents = refreshedCurrentClass.students.map(s => 
+          s.id === updatedStudent.id ? updatedStudent : s
+        );
         
-        return {
-          ...opportunity,
-          bidders: updatedBidders
+        // Find the opportunity to update with the new bidder
+        const updatedOpportunities = refreshedCurrentClass.bidOpportunities.map(opportunity => {
+          if (opportunity.id === opportunityId) {
+            // Add the student to this opportunity's bidders if not already there
+            const isAlreadyBidding = opportunity.bidders.some(b => b.id === updatedStudent.id);
+            const updatedBidders = isAlreadyBidding
+              ? opportunity.bidders
+              : [...opportunity.bidders, updatedStudent];
+            
+            return {
+              ...opportunity,
+              bidders: updatedBidders
+            };
+          }
+          return opportunity;
+        });
+        
+        // Also update the class-level bidders for backward compatibility
+        const isAlreadyBidding = refreshedCurrentClass.bidders.some(b => b.id === updatedStudent.id);
+        const updatedBidders = isAlreadyBidding
+          ? refreshedCurrentClass.bidders
+          : [...refreshedCurrentClass.bidders, updatedStudent];
+        
+        // Create the updated class
+        const updatedClass: ClassConfig = {
+          ...refreshedCurrentClass,
+          students: updatedStudents,
+          bidders: updatedBidders,
+          bidOpportunities: updatedOpportunities
         };
+        
+        // Update the classes array
+        const updatedClasses = refreshedClasses.map(c => 
+          c.id === currentClass.id ? updatedClass : c
+        );
+        
+        // Update state
+        setClasses(updatedClasses);
+        setCurrentClass(updatedClass);
+        setAuth({
+          ...auth,
+          currentStudent: updatedStudent,
+          currentClass: updatedClass
+        });
+        
+        // Explicitly save to localStorage to ensure changes are persisted immediately
+        localStorage.setItem("classData", JSON.stringify(updatedClasses));
       }
-      return opportunity;
-    });
-    
-    // Also update the class-level bidders for backward compatibility
-    const isAlreadyBidding = currentClass.bidders.some(b => b.id === updatedStudent.id);
-    const updatedBidders = isAlreadyBidding
-      ? currentClass.bidders
-      : [...currentClass.bidders, updatedStudent];
-    
-    // Create the updated class
-    const updatedClass: ClassConfig = {
-      ...currentClass,
-      students: updatedStudents,
-      bidders: updatedBidders,
-      bidOpportunities: updatedOpportunities
-    };
-    
-    // Update the classes array
-    const updatedClasses = classes.map(c => 
-      c.id === currentClass.id ? updatedClass : c
-    );
-    
-    // Update state
-    setClasses(updatedClasses);
-    setCurrentClass(updatedClass);
-    setAuth({
-      ...auth,
-      currentStudent: updatedStudent,
-      currentClass: updatedClass
-    });
-    
-    // Explicitly save to localStorage to ensure changes are persisted immediately
-    localStorage.setItem("classData", JSON.stringify(updatedClasses));
+    } catch (error) {
+      console.error("Error refreshing class data after bid:", error);
+      
+      // Fallback to the original logic if database refresh fails
+      const updatedStudents = currentClass.students.map(s => 
+        s.id === updatedStudent.id ? updatedStudent : s
+      );
+      
+      const updatedOpportunities = currentClass.bidOpportunities.map(opportunity => {
+        if (opportunity.id === opportunityId) {
+          const isAlreadyBidding = opportunity.bidders.some(b => b.id === updatedStudent.id);
+          const updatedBidders = isAlreadyBidding
+            ? opportunity.bidders
+            : [...opportunity.bidders, updatedStudent];
+          
+          return {
+            ...opportunity,
+            bidders: updatedBidders
+          };
+        }
+        return opportunity;
+      });
+      
+      const isAlreadyBidding = currentClass.bidders.some(b => b.id === updatedStudent.id);
+      const updatedBidders = isAlreadyBidding
+        ? currentClass.bidders
+        : [...currentClass.bidders, updatedStudent];
+      
+      const updatedClass: ClassConfig = {
+        ...currentClass,
+        students: updatedStudents,
+        bidders: updatedBidders,
+        bidOpportunities: updatedOpportunities
+      };
+      
+      const updatedClasses = classes.map(c => 
+        c.id === currentClass.id ? updatedClass : c
+      );
+      
+      setClasses(updatedClasses);
+      setCurrentClass(updatedClass);
+      setAuth({
+        ...auth,
+        currentStudent: updatedStudent,
+        currentClass: updatedClass
+      });
+      
+      localStorage.setItem("classData", JSON.stringify(updatedClasses));
+    }
   };
   
   const handleRemoveClass = async (classId: string) => {
