@@ -60,7 +60,7 @@ const Dashboard = ({
   const [description, setDescription] = useState("");
   const [eventDate, setEventDate] = useState<Date | undefined>(undefined);
   const [bidOpenDate, setBidOpenDate] = useState<Date | undefined>(undefined);
-  const [capacity, setCapacity] = useState<number | undefined>(currentClass?.capacity);
+  const [capacity, setCapacity] = useState<string>("");
   
   // Get the selected opportunity if there is one
   const selectedOpportunity = currentClass?.bidOpportunities?.find(
@@ -72,14 +72,49 @@ const Dashboard = ({
     setDescription("");
     setEventDate(undefined);
     setBidOpenDate(undefined);
-    setCapacity(currentClass?.capacity);
+    setCapacity("");
+  };
+
+  const handleCapacityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    
+    // Allow empty string for clearing the field
+    if (value === "") {
+      setCapacity("");
+      return;
+    }
+    
+    // Only allow non-negative integers (including zero)
+    const numericValue = parseInt(value, 10);
+    if (!isNaN(numericValue) && numericValue >= 0) {
+      setCapacity(value);
+    }
+  };
+
+  const handleCapacityKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Allow backspace, delete, tab, escape, enter, and arrow keys
+    if ([8, 9, 27, 13, 37, 38, 39, 40, 46].indexOf(e.keyCode) !== -1 ||
+        // Allow Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+        (e.keyCode === 65 && e.ctrlKey === true) ||
+        (e.keyCode === 67 && e.ctrlKey === true) ||
+        (e.keyCode === 86 && e.ctrlKey === true) ||
+        (e.keyCode === 88 && e.ctrlKey === true)) {
+      return;
+    }
+    
+    // Ensure that it is a number and stop the keypress
+    if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+      e.preventDefault();
+    }
   };
   
   const handleCreateOpportunity = async () => {
-    if (!currentClass || !title || !description || !eventDate || !bidOpenDate || !capacity) {
+    const capacityValue = parseInt(capacity, 10);
+    
+    if (!currentClass || !title || !description || !eventDate || !bidOpenDate || isNaN(capacityValue) || capacityValue < 0) {
       toast({
         title: "Missing information",
-        description: "Please fill in all required fields",
+        description: "Please fill in all required fields with valid values",
         variant: "destructive",
       });
       return;
@@ -94,7 +129,7 @@ const Dashboard = ({
         event_date: eventDate.toISOString(),
         opens_at: bidOpenDate.toISOString(),
         closes_at: eventDate.toISOString(),
-        capacity
+        capacity: capacityValue
       });
       
       onOpportunityCreated?.(newOpportunity);
@@ -615,18 +650,18 @@ const Dashboard = ({
               <div className="flex items-center gap-2">
                 <Input
                   id="capacity"
-                  type="number"
-                  min={1}
-                  max={100}
+                  type="text"
                   value={capacity}
-                  onChange={(e) => setCapacity(parseInt(e.target.value) || 1)}
+                  onChange={handleCapacityChange}
+                  onKeyDown={handleCapacityKeyDown}
+                  placeholder="0"
                   disabled={isCreating}
                   required
                 />
                 <span className="text-sm text-muted-foreground">students</span>
               </div>
               <p className="text-xs text-muted-foreground">
-                Maximum number of students for this specific opportunity (Class default: {currentClass.capacity})
+                Number of students for this opportunity (0 or any positive number)
               </p>
             </div>
           </div>
