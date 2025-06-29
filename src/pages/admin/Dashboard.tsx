@@ -199,19 +199,6 @@ const Dashboard = ({
             </p>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Capacity</CardTitle>
-            <Settings className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{currentClass.capacity}</div>
-            <p className="text-xs text-muted-foreground">
-              Max winners
-            </p>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Class Details Card */}
@@ -233,23 +220,11 @@ const Dashboard = ({
                 <Label className="text-sm font-medium text-gray-500">Class Password</Label>
                 <p className="text-lg font-mono bg-gray-100 px-3 py-1 rounded">{currentClass.password}</p>
               </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-500">Reward Title</Label>
-                <p className="text-lg">{currentClass.rewardTitle}</p>
-              </div>
             </div>
             <div className="space-y-4">
               <div>
-                <Label className="text-sm font-medium text-gray-500">Reward Description</Label>
-                <p className="text-sm text-gray-700">{currentClass.rewardDescription}</p>
-              </div>
-              <div>
                 <Label className="text-sm font-medium text-gray-500">Bid Opportunities</Label>
                 <p className="text-lg font-semibold">{currentClass.bidOpportunities?.length || 0}</p>
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-500">Selected Students</Label>
-                <p className="text-lg font-semibold">{currentClass.selectedStudents?.length || 0}</p>
               </div>
             </div>
           </div>
