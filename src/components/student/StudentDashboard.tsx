@@ -2,67 +2,59 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import EnhancedBidCard from "@/components/student/EnhancedBidCard";
+import StudentSidebar from "@/components/student/StudentSidebar";
 import { Student, ClassConfig, BidOpportunity } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { formatDate, getBidOpportunityStatus } from "@/utils/dates";
 import { useNavigate, useLocation } from "react-router-dom";
-import { BookOpen, Users, Coins, ChevronRight, LogOut, Menu, X } from "lucide-react";
+import { Menu, X, Users, Calendar, Trophy, Clock, Coins } from "lucide-react";
 
 const StudentDashboard = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Get student and class data from location state
+  // Get student and classes data from location state
   const initialStudent = location.state?.student || null;
-  const initialClassConfig = location.state?.classConfig || null;
-  const enrolledClasses = location.state?.enrolledClasses || [initialClassConfig].filter(Boolean);
+  const allClasses = location.state?.classes || [];
   
-  // Use local state to track current class and student
+  // Use local state to track current student and selected class
   const [student, setStudent] = useState<Student | null>(initialStudent);
-  const [currentClass, setCurrentClass] = useState<ClassConfig | null>(initialClassConfig);
-  const [availableClasses, setAvailableClasses] = useState<ClassConfig[]>(enrolledClasses);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
-  
-  // Check if we're on mobile
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-      if (window.innerWidth < 768) {
-        setSidebarOpen(false);
-      }
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  const [classes, setClasses] = useState<ClassConfig[]>(allClasses);
+  const [currentClass, setCurrentClass] = useState<ClassConfig | null>(
+    allClasses.length > 0 ? allClasses[0] : null
+  );
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   
   // Load the latest class configuration from localStorage on component mount
   useEffect(() => {
-    if (student && currentClass) {
+    if (student && classes.length > 0) {
       const storedClassesStr = localStorage.getItem("classData");
       if (storedClassesStr) {
         try {
           const storedClasses = JSON.parse(storedClassesStr);
-          
-          // Update available classes with latest data
-          const updatedAvailableClasses = availableClasses.map(enrolledClass => {
-            const updatedClass = storedClasses.find((c: ClassConfig) => c.id === enrolledClass.id);
-            return updatedClass || enrolledClass;
+          // Update classes with stored data
+          const updatedClasses = classes.map(classConfig => {
+            const storedClass = storedClasses.find((c: ClassConfig) => c.id === classConfig.id);
+            return storedClass || classConfig;
           });
-          setAvailableClasses(updatedAvailableClasses);
+          setClasses(updatedClasses);
           
-          // Update current class
-          const updatedCurrentClass = storedClasses.find((c: ClassConfig) => c.id === currentClass.id);
-          if (updatedCurrentClass) {
-            setCurrentClass(updatedCurrentClass);
-            
-            // Update student data from the current class
-            const updatedStudent = updatedCurrentClass.students.find((s: Student) => s.id === student.id);
+          // Update current class if it exists in stored data
+          if (currentClass) {
+            const updatedCurrentClass = updatedClasses.find(c => c.id === currentClass.id);
+            if (updatedCurrentClass) {
+              setCurrentClass(updatedCurrentClass);
+            }
+          }
+          
+          // Update student data from the stored data
+          if (currentClass) {
+            const updatedStudent = updatedClasses
+              .find(c => c.id === currentClass.id)?.students
+              .find((s: Student) => s.id === student.id);
             if (updatedStudent) {
               setStudent(updatedStudent);
             }
@@ -74,36 +66,7 @@ const StudentDashboard = () => {
     }
   }, []);
   
-  const handleClassSwitch = (classId: string) => {
-    const selectedClass = availableClasses.find(c => c.id === classId);
-    if (selectedClass && student) {
-      // Find the student record in the selected class
-      const studentInClass = selectedClass.students.find(s => s.email === student.email && s.studentNumber === student.studentNumber);
-      
-      if (studentInClass) {
-        setCurrentClass(selectedClass);
-        setStudent(studentInClass);
-        
-        // Close sidebar on mobile after selection
-        if (isMobile) {
-          setSidebarOpen(false);
-        }
-        
-        toast({
-          title: "Switched class",
-          description: `Now viewing ${selectedClass.className}`,
-        });
-      } else {
-        toast({
-          title: "Error switching class",
-          description: "Could not find your record in the selected class",
-          variant: "destructive",
-        });
-      }
-    }
-  };
-  
-  if (!student || !currentClass) {
+  if (!student || classes.length === 0) {
     return (
       <div className="container mx-auto p-4">
         <h1 className="text-2xl font-heading font-bold mb-6">Student Dashboard</h1>
@@ -117,23 +80,22 @@ const StudentDashboard = () => {
     );
   }
   
-  // Ensure bidOpportunities exists, default to empty array if not
-  const bidOpportunities = currentClass.bidOpportunities || [];
-  
-  // Find first open opportunity (if any)
-  const nextOpenOpportunity = bidOpportunities.find(
-    opportunity => getBidOpportunityStatus(opportunity) === "Open for Bidding"
-  );
-  
-  // Find opportunity the student has bid on (if any)
-  const studentBidOpportunity = bidOpportunities.find(
-    opportunity => opportunity.bidders && opportunity.bidders.some(bidder => bidder.id === student.id)
-  );
-
-  // Find the opportunity where the student used their token (for students who used token but may not have bid)
-  const tokenUsedOpportunity = studentBidOpportunity || (student.hasUsedToken ? bidOpportunities[0] : null);
+  const handleSelectClass = (classId: string) => {
+    const selectedClass = classes.find(c => c.id === classId);
+    if (selectedClass) {
+      setCurrentClass(selectedClass);
+      
+      // Update student data for the selected class
+      const studentInClass = selectedClass.students.find(s => s.id === student.id);
+      if (studentInClass) {
+        setStudent(studentInClass);
+      }
+    }
+  };
   
   const handleBidSubmitted = (bidId: string, updatedStudent: Student, opportunityId: string) => {
+    if (!currentClass) return;
+    
     // Get current classes from localStorage
     const storedClassesStr = localStorage.getItem("classData");
     if (storedClassesStr) {
@@ -186,17 +148,15 @@ const StudentDashboard = () => {
         
         // Find the updated class config to use for state updates
         const updatedClassConfig = updatedClasses.find((c: ClassConfig) => c.id === currentClass.id);
+        const updatedAllClasses = classes.map(c => {
+          const updated = updatedClasses.find((uc: ClassConfig) => uc.id === c.id);
+          return updated || c;
+        });
         
         // Update UI state
         setStudent(updatedStudent);
+        setClasses(updatedAllClasses);
         setCurrentClass(updatedClassConfig);
-        
-        // Update available classes as well
-        const updatedAvailableClasses = availableClasses.map(availableClass => {
-          const updated = updatedClasses.find((c: ClassConfig) => c.id === availableClass.id);
-          return updated || availableClass;
-        });
-        setAvailableClasses(updatedAvailableClasses);
         
       } catch (error) {
         console.error("Error updating class data:", error);
@@ -213,300 +173,266 @@ const StudentDashboard = () => {
     navigate("/");
   };
   
+  // Ensure bidOpportunities exists, default to empty array if not
+  const bidOpportunities = currentClass?.bidOpportunities || [];
+  
+  // Find first open opportunity (if any)
+  const nextOpenOpportunity = bidOpportunities.find(
+    opportunity => getBidOpportunityStatus(opportunity) === "Open for Bidding"
+  );
+  
+  // Find opportunity the student has bid on (if any)
+  const studentBidOpportunity = bidOpportunities.find(
+    opportunity => opportunity.bidders && opportunity.bidders.some(bidder => bidder.id === student.id)
+  );
+  
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Mobile Sidebar Toggle */}
-      <div className="fixed top-4 left-4 z-50 md:hidden">
-        <Button 
-          variant="outline" 
-          size="icon" 
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="rounded-full shadow-md"
-        >
-          {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </Button>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white border-b relative z-50">
+        <div className="container mx-auto p-4 flex flex-col md:flex-row justify-between items-center">
+          <div className="flex items-center space-x-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="md:hidden"
+            >
+              {sidebarCollapsed ? <Menu className="w-5 h-5" /> : <X className="w-5 h-5" />}
+            </Button>
+            <h1 className="text-2xl font-heading font-bold text-academy-blue mb-4 md:mb-0">
+              Student Dashboard
+            </h1>
+          </div>
+          <div className="flex items-center space-x-4">
+            <span className="text-sm text-gray-600">Welcome, {student.name}</span>
+            <Button variant="outline" onClick={handleLogout}>Logout</Button>
+          </div>
+        </div>
+      </header>
       
       {/* Sidebar */}
-      <div className={`
-        fixed md:relative z-40 h-full bg-white border-r transition-all duration-300 overflow-y-auto
-        ${sidebarOpen ? 'w-64 left-0' : 'w-0 -left-64 md:w-20 md:left-0'}
-      `}>
-        <div className="p-4 border-b">
-          <h2 className={`font-bold text-lg ${!sidebarOpen && 'md:hidden'}`}>My Classes</h2>
-          {!sidebarOpen && <BookOpen className="hidden md:block mx-auto h-6 w-6 text-gray-500" />}
-        </div>
-        
-        <div className="p-2">
-          {availableClasses.map((classConfig) => {
-            const studentInClass = classConfig.students.find(s => s.email === student.email);
-            const hasUsedToken = studentInClass?.hasUsedToken || false;
-            const isCurrentClass = classConfig.id === currentClass.id;
-            const activeBidOpportunities = classConfig.bidOpportunities?.filter(opp => 
-              getBidOpportunityStatus(opp) === "Open for Bidding"
-            ).length || 0;
-
-            return (
-              <div 
-                key={classConfig.id} 
-                className={`
-                  cursor-pointer rounded-md p-3 mb-2 transition-all
-                  ${isCurrentClass 
-                    ? 'bg-blue-50 border-l-4 border-blue-500' 
-                    : 'hover:bg-gray-100 border-l-4 border-transparent'}
-                `}
-                onClick={() => handleClassSwitch(classConfig.id)}
-              >
-                {sidebarOpen ? (
-                  <>
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className="font-medium truncate">{classConfig.className}</h3>
-                      {isCurrentClass && <ChevronRight className="h-4 w-4 text-blue-500" />}
-                    </div>
-                    
-                    <div className="flex items-center justify-between text-xs text-gray-500">
-                      <span className="flex items-center gap-1">
-                        <Users className="h-3 w-3" />
-                        {classConfig.students.length}
-                      </span>
-                      <Badge variant={hasUsedToken ? "secondary" : "default"} className="text-xs">
-                        {hasUsedToken ? "Used" : "Available"}
-                      </Badge>
-                    </div>
-                    
-                    {activeBidOpportunities > 0 && (
-                      <div className="mt-1 text-xs text-blue-600 font-medium">
-                        {activeBidOpportunities} active bid{activeBidOpportunities > 1 ? 's' : ''}
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="hidden md:flex flex-col items-center justify-center py-2">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 ${
-                      isCurrentClass ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
-                    }`}>
-                      {classConfig.className.charAt(0).toUpperCase()}
-                    </div>
-                    {hasUsedToken ? (
-                      <div className="w-2 h-2 rounded-full bg-gray-400"></div>
-                    ) : (
-                      <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-        
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t">
-          <Button 
-            variant="outline" 
-            onClick={handleLogout} 
-            className={`${sidebarOpen ? 'w-full' : 'md:w-auto md:mx-auto md:p-2'}`}
-          >
-            {sidebarOpen ? (
-              "Logout"
-            ) : (
-              <LogOut className="hidden md:block h-4 w-4" />
-            )}
-          </Button>
-        </div>
-      </div>
+      <StudentSidebar
+        classes={classes}
+        currentClass={currentClass}
+        onSelectClass={handleSelectClass}
+        isCollapsed={sidebarCollapsed}
+      />
       
-      {/* Main Content */}
-      <div className={`flex-1 overflow-y-auto transition-all duration-300 ${
-        sidebarOpen ? 'md:ml-64' : 'md:ml-20'
+      <main className={`min-h-[calc(100vh-64px)] transition-all duration-300 ${
+        sidebarCollapsed ? 'ml-16' : 'ml-80'
       }`}>
-        <header className="bg-white border-b p-4 sticky top-0 z-30">
-          <div className="flex justify-between items-center max-w-4xl mx-auto">
-            <div>
-              <h1 className="text-2xl font-heading font-bold">{currentClass.className}</h1>
-              <p className="text-muted-foreground">Welcome, {student.name}</p>
-            </div>
-            <div className="hidden md:block">
-              <Button variant="outline" onClick={handleLogout}>
-                Logout
-              </Button>
-            </div>
-          </div>
-        </header>
-        
-        <main className="p-4 max-w-4xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg font-heading">Token Status</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    <span>Your bidding token:</span>
-                    {student.hasUsedToken ? (
-                      <Badge variant="secondary">Used</Badge>
-                    ) : (
-                      <Badge className="bg-academy-blue">Available</Badge>
-                    )}
-                  </div>
-                  
-                  {nextOpenOpportunity && !student.hasUsedToken && (
-                    <div className="mt-4 p-3 bg-gray-50 rounded-md">
-                      <p className="text-sm">
-                        <span className="font-medium">
-                          {nextOpenOpportunity.bidders?.length || 0}
-                        </span> student(s) have already placed bids for the next open opportunity
-                      </p>
+        <div className="container mx-auto p-4 max-w-6xl">
+          {currentClass ? (
+            <Tabs defaultValue="overview" className="space-y-6">
+              <TabsList className="grid grid-cols-3 mb-6">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="opportunities">Opportunities</TabsTrigger>
+                <TabsTrigger value="profile">Profile</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="overview" className="space-y-6">
+                {/* Class Overview */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-xl font-heading flex items-center gap-2">
+                      <BookOpen className="w-5 h-5" />
+                      {currentClass.className}
+                    </CardTitle>
+                    <CardDescription>{currentClass.rewardDescription}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div className="text-center p-4 bg-gray-50 rounded-lg">
+                        <Coins className="w-6 h-6 mx-auto mb-2 text-academy-blue" />
+                        <div className="text-lg font-semibold">
+                          {student.hasUsedToken ? "Used" : "Available"}
+                        </div>
+                        <div className="text-sm text-gray-600">Token Status</div>
+                      </div>
+                      
+                      <div className="text-center p-4 bg-gray-50 rounded-lg">
+                        <Calendar className="w-6 h-6 mx-auto mb-2 text-academy-blue" />
+                        <div className="text-lg font-semibold">{bidOpportunities.length}</div>
+                        <div className="text-sm text-gray-600">Total Opportunities</div>
+                      </div>
+                      
+                      <div className="text-center p-4 bg-gray-50 rounded-lg">
+                        <Trophy className="w-6 h-6 mx-auto mb-2 text-academy-blue" />
+                        <div className="text-lg font-semibold">
+                          {studentBidOpportunity ? "Yes" : "No"}
+                        </div>
+                        <div className="text-sm text-gray-600">Bid Placed</div>
+                      </div>
+                      
+                      <div className="text-center p-4 bg-gray-50 rounded-lg">
+                        <Users className="w-6 h-6 mx-auto mb-2 text-academy-blue" />
+                        <div className="text-lg font-semibold">{currentClass.students.length}</div>
+                        <div className="text-sm text-gray-600">Total Students</div>
+                      </div>
                     </div>
-                  )}
+                  </CardContent>
+                </Card>
 
-                  {/* Enhanced bid status section */}
-                  <div className="mt-4 p-3 bg-gray-50 rounded-md">
-                    <h3 className="font-medium mb-2">Your Bid Status</h3>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="font-medium text-sm">Event</div>
-                      <div className="font-medium text-sm">Status</div>
-                      <div className="font-medium text-sm">Result</div>
-                    </div>
-                    
-                    {studentBidOpportunity ? (
-                      <div className="grid grid-cols-3 gap-2 mt-1">
-                        <div className="text-sm">{studentBidOpportunity.title}</div>
-                        <div className="text-sm">
-                          <Badge variant="outline" className="text-xs">Bid Placed</Badge>
-                        </div>
-                        <div className="text-sm">
-                          {studentBidOpportunity.selectedStudents && 
-                           studentBidOpportunity.selectedStudents.some(s => s.id === student.id) ? (
-                            <Badge variant="default" className="bg-green-500 text-xs">Selected</Badge>
-                          ) : getBidOpportunityStatus(studentBidOpportunity) === "Selection Complete" ? (
-                            <Badge variant="secondary" className="text-xs">Not Selected</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-xs">Pending</Badge>
-                          )}
-                        </div>
-                      </div>
-                    ) : student.hasUsedToken && tokenUsedOpportunity ? (
-                      <div className="grid grid-cols-3 gap-2 mt-1">
-                        <div className="text-sm">{tokenUsedOpportunity.title}</div>
-                        <div className="text-sm">
-                          <Badge variant="secondary" className="text-xs">Token Used</Badge>
-                        </div>
-                        <div className="text-sm">
-                          <Badge variant="outline" className="text-xs">No Bid</Badge>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-sm text-muted-foreground py-2 text-center">
-                        {student.hasUsedToken ? "Token used, but no specific opportunity found" : "No bid placed yet"}
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg font-heading">Upcoming Bidding Opportunities</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3 max-h-72 overflow-y-auto">
-                    {bidOpportunities.length === 0 ? (
-                      <div className="text-center py-4 text-muted-foreground">
-                        No bidding opportunities available yet
-                      </div>
-                    ) : (
-                      bidOpportunities.map((opportunity) => (
-                        <div 
-                          key={opportunity.id}
-                          className="p-3 border rounded-md flex justify-between items-center"
-                        >
-                          <div>
-                            <div className="font-medium">{opportunity.title}</div>
-                            <div className="text-sm text-muted-foreground">{formatDate(opportunity.date)}</div>
-                          </div>
-                          <div className="flex flex-col items-end">
-                            <Badge variant={getBidOpportunityStatus(opportunity) === "Open for Bidding" ? "default" : "secondary"} className="mb-1">
-                              {getBidOpportunityStatus(opportunity)}
-                            </Badge>
-                            {opportunity.bidders && opportunity.bidders.some(bidder => bidder.id === student.id) && (
-                              <span className="text-xs text-academy-blue">You've placed a bid</span>
-                            )}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-            
-            <div>
-              <EnhancedBidCard 
-                student={student}
-                classConfig={currentClass}
-                onBidSubmitted={handleBidSubmitted}
-              />
-              
-              <Card className="mt-6">
-                <CardHeader>
-                  <CardTitle className="text-lg font-heading">Your Information</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-3 gap-1">
-                      <div className="text-sm text-muted-foreground">Name:</div>
-                      <div className="col-span-2 font-medium">{student.name}</div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-1">
-                      <div className="text-sm text-muted-foreground">Email:</div>
-                      <div className="col-span-2">{student.email}</div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-1">
-                      <div className="text-sm text-muted-foreground">Student Number:</div>
-                      <div className="col-span-2">{student.studentNumber}</div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-1">
-                      <div className="text-sm text-muted-foreground">Current Class:</div>
-                      <div className="col-span-2">{currentClass.className}</div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-1">
-                      <div className="text-sm text-muted-foreground">Current Reward:</div>
-                      <div className="col-span-2">{currentClass.rewardTitle}</div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-1">
-                      <div className="text-sm text-muted-foreground">Token Status:</div>
-                      <div className="col-span-2">
+                {/* Quick Actions */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg font-heading">Token Status</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center justify-between mb-4">
+                        <span>Your bidding token:</span>
                         {student.hasUsedToken ? (
                           <Badge variant="secondary">Used</Badge>
                         ) : (
                           <Badge className="bg-academy-blue">Available</Badge>
                         )}
                       </div>
+                      
+                      {nextOpenOpportunity && !student.hasUsedToken && (
+                        <div className="p-3 bg-gray-50 rounded-md">
+                          <p className="text-sm">
+                            <span className="font-medium">
+                              {nextOpenOpportunity.bidders?.length || 0}
+                            </span> student(s) have already placed bids for the next open opportunity
+                          </p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg font-heading">Bid Status</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {studentBidOpportunity ? (
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span className="text-sm">Event:</span>
+                            <span className="text-sm font-medium">{studentBidOpportunity.title}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm">Status:</span>
+                            <Badge variant="outline" className="text-xs">Bid Placed</Badge>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm">Result:</span>
+                            {studentBidOpportunity.selectedStudents && 
+                             studentBidOpportunity.selectedStudents.some(s => s.id === student.id) ? (
+                              <Badge variant="default" className="bg-green-500 text-xs">Selected</Badge>
+                            ) : getBidOpportunityStatus(studentBidOpportunity) === "Selection Complete" ? (
+                              <Badge variant="secondary" className="text-xs">Not Selected</Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs">Pending</Badge>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-sm text-muted-foreground text-center py-4">
+                          {student.hasUsedToken ? "Token used, no bid placed yet" : "No bid placed yet"}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="opportunities" className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <EnhancedBidCard 
+                    student={student}
+                    classConfig={currentClass}
+                    onBidSubmitted={handleBidSubmitted}
+                  />
+                  
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg font-heading">Upcoming Opportunities</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3 max-h-72 overflow-y-auto">
+                        {bidOpportunities.map((opportunity) => (
+                          <div 
+                            key={opportunity.id}
+                            className="p-3 border rounded-md flex justify-between items-center"
+                          >
+                            <div>
+                              <div className="font-medium">{opportunity.title}</div>
+                              <div className="text-sm text-muted-foreground">{formatDate(opportunity.date)}</div>
+                            </div>
+                            <div className="flex flex-col items-end">
+                              <Badge variant={getBidOpportunityStatus(opportunity) === "Open for Bidding" ? "default" : "secondary"} className="mb-1">
+                                {getBidOpportunityStatus(opportunity)}
+                              </Badge>
+                              {opportunity.bidders && opportunity.bidders.some(bidder => bidder.id === student.id) && (
+                                <span className="text-xs text-academy-blue">You've placed a bid</span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="profile">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg font-heading">Your Information</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-3 gap-1">
+                        <div className="text-sm text-muted-foreground">Name:</div>
+                        <div className="col-span-2 font-medium">{student.name}</div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-1">
+                        <div className="text-sm text-muted-foreground">Email:</div>
+                        <div className="col-span-2">{student.email}</div>
+                      </div>
+                      {student.studentNumber && (
+                        <div className="grid grid-cols-3 gap-1">
+                          <div className="text-sm text-muted-foreground">Student Number:</div>
+                          <div className="col-span-2">{student.studentNumber}</div>
+                        </div>
+                      )}
+                      <div className="grid grid-cols-3 gap-1">
+                        <div className="text-sm text-muted-foreground">Classes Enrolled:</div>
+                        <div className="col-span-2">{classes.length}</div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-1">
+                        <div className="text-sm text-muted-foreground">Current Class:</div>
+                        <div className="col-span-2">{currentClass.className}</div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-1">
+                        <div className="text-sm text-muted-foreground">Token Status:</div>
+                        <div className="col-span-2">
+                          {student.hasUsedToken ? (
+                            <Badge variant="secondary">Used</Badge>
+                          ) : (
+                            <Badge className="bg-academy-blue">Available</Badge>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    {/* Show which opportunity the token was used for */}
-                    {student.hasUsedToken && tokenUsedOpportunity && (
-                      <div className="grid grid-cols-3 gap-1">
-                        <div className="text-sm text-muted-foreground">Token Used For:</div>
-                        <div className="col-span-2 text-sm">
-                          {tokenUsedOpportunity.title}
-                        </div>
-                      </div>
-                    )}
-                    {availableClasses.length > 1 && (
-                      <div className="grid grid-cols-3 gap-1">
-                        <div className="text-sm text-muted-foreground">Enrolled Classes:</div>
-                        <div className="col-span-2 text-sm">
-                          {availableClasses.length} classes
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </main>
-      </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          ) : (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <h2 className="text-xl mb-4">No Class Selected</h2>
+                <p className="text-muted-foreground">
+                  Please select a class from the sidebar to view its details.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </main>
     </div>
   );
 };
