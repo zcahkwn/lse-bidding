@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatDate, getBidOpportunityStatus } from "@/utils/dates";
 import EditBidOpportunityDialog from "@/components/admin/EditBidOpportunityDialog";
 import BidOpportunityManager from "@/components/admin/BidOpportunityManager";
-import { Trash2, AlertTriangle, Users, Coins, Calendar, Settings, Plus, Edit, Info, Eye, EyeOff } from "lucide-react";
+import { Trash2, AlertTriangle, Users, Coins, Settings, Plus, Edit, Info, Eye, EyeOff } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -159,7 +159,7 @@ const Dashboard = ({
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Students</CardTitle>
@@ -199,21 +199,6 @@ const Dashboard = ({
             </div>
             <p className="text-xs text-muted-foreground">
               Have placed bids
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Default Capacity</CardTitle>
-            <Calendar className="h-4 w-4 text-purple-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-purple-600">
-              {currentClass.capacity}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Default max students
             </p>
           </CardContent>
         </Card>
@@ -431,7 +416,6 @@ const Dashboard = ({
         ) : (
           <Card>
             <CardContent className="p-8 text-center">
-              <Calendar className="w-12 h-12 mx-auto text-gray-400 mb-4" />
               <h3 className="text-lg font-semibold mb-2">No Bidding Opportunities</h3>
               <p className="text-muted-foreground mb-4">
                 Create your first bidding opportunity to get started.
