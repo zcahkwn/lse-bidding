@@ -355,6 +355,7 @@ const Dashboard = ({
                   <TableHeader>
                     <TableRow>
                       <TableHead>Title</TableHead>
+                      <TableHead>Capacity</TableHead>
                       <TableHead>Event Date</TableHead>
                       <TableHead>Bidding Opens</TableHead>
                       <TableHead>Status</TableHead>
@@ -371,6 +372,7 @@ const Dashboard = ({
                           className={expandedOpportunityId === opportunity.id ? "bg-academy-lightBlue/10" : ""}
                         >
                           <TableCell className="font-medium">{opportunity.title}</TableCell>
+                          <TableCell>{currentClass.capacity}</TableCell>
                           <TableCell>{formatDate(opportunity.date)}</TableCell>
                           <TableCell>{opportunity.bidOpenDate ? formatDate(opportunity.bidOpenDate) : "1 week before"}</TableCell>
                           <TableCell>
@@ -427,7 +429,7 @@ const Dashboard = ({
                         {/* Student Overview Section - Only shown when expanded */}
                         {expandedOpportunityId === opportunity.id && (
                           <TableRow>
-                            <TableCell colSpan={7} className="p-0">
+                            <TableCell colSpan={8} className="p-0">
                               <div className="bg-blue-50/50 border-l-4 border-l-academy-blue p-6">
                                 <h3 className="text-lg font-semibold mb-4 text-academy-blue flex items-center gap-2">
                                   <Info className="w-5 h-5" />
