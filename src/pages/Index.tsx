@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import AdminLoginForm from "@/components/admin/LoginForm";
 import StudentLogin from "@/components/student/StudentLogin";
+import AdminSidebar from "@/components/admin/AdminSidebar";
 import Dashboard from "@/pages/admin/Dashboard";
 import Students from "@/pages/admin/Students";
 import Rewards from "@/pages/admin/Rewards";
@@ -18,7 +19,7 @@ import StudentDashboard from "@/components/student/StudentDashboard";
 import { Student, ClassConfig, AuthState, BidOpportunity } from "@/types";
 import { initialAuthState, logout } from "@/utils/auth";
 import { createClass, fetchClasses, updateClass, deleteClassAtomic, updateBidOpportunity, ClassDeletionResult } from "@/lib/classService";
-import { Loader2, AlertTriangle, CheckCircle, Trash2 } from "lucide-react";
+import { Loader2, AlertTriangle, CheckCircle, Trash2, Menu, X } from "lucide-react";
 
 const Index = () => {
   // Auth state
@@ -29,6 +30,7 @@ const Index = () => {
   const [currentClass, setCurrentClass] = useState<ClassConfig | null>(null);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [isLoading, setIsLoading] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   
   // New class dialog
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -61,6 +63,9 @@ const Index = () => {
             // Clear invalid stored class ID
             localStorage.removeItem("currentClassId");
           }
+        } else if (fetchedClasses.length > 0) {
+          // Auto-select first class if none is selected
+          setCurrentClass(fetchedClasses[0]);
         }
       } catch (error) {
         console.error("Error loading classes:", error);
@@ -392,7 +397,7 @@ const Index = () => {
         // Update UI state
         const updatedClasses = classes.filter(c => c.id !== classId);
         setClasses(updatedClasses);
-        setCurrentClass(null);
+        setCurrentClass(updatedClasses.length > 0 ? updatedClasses[0] : null);
         
         // Show success toast
         toast({
@@ -483,16 +488,37 @@ const Index = () => {
   if (auth.isAdmin) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <header className="bg-white border-b">
+        <header className="bg-white border-b relative z-50">
           <div className="container mx-auto p-4 flex flex-col md:flex-row justify-between items-center">
-            <h1 className="text-2xl font-heading font-bold text-academy-blue mb-4 md:mb-0">
-              Student Bidding System - Admin
-            </h1>
+            <div className="flex items-center space-x-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                className="md:hidden"
+              >
+                {sidebarCollapsed ? <Menu className="w-5 h-5" /> : <X className="w-5 h-5" />}
+              </Button>
+              <h1 className="text-2xl font-heading font-bold text-academy-blue mb-4 md:mb-0">
+                Student Bidding System - Admin
+              </h1>
+            </div>
             <Button variant="outline" onClick={handleLogout}>Logout</Button>
           </div>
         </header>
         
-        <main className="min-h-[calc(100vh-64px)]">
+        {/* Sidebar */}
+        <AdminSidebar
+          classes={classes}
+          currentClass={currentClass}
+          onSelectClass={handleSelectClass}
+          onCreateClass={handleCreateClass}
+          isCollapsed={sidebarCollapsed}
+        />
+        
+        <main className={`min-h-[calc(100vh-64px)] transition-all duration-300 ${
+          sidebarCollapsed ? 'ml-16' : 'ml-80'
+        }`}>
           <div className="container mx-auto p-4">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="grid grid-cols-3 mb-6">
