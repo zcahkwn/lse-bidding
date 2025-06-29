@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import { ClassConfig, Student, BidOpportunity } from '@/types'
+import { getClassBidStatistics, updateBidOpportunitiesWithCounts } from '@/lib/bidTrackingService'
 
 export interface CreateClassData {
   name: string
@@ -320,7 +321,7 @@ export const createBidOpportunity = async (
   }
 }
 
-// Fetch all classes from Supabase
+// Fetch all classes from Supabase with real-time bid data
 export const fetchClasses = async (): Promise<ClassConfig[]> => {
   try {
     const { data: classesData, error: classesError } = await supabase
@@ -366,32 +367,40 @@ export const fetchClasses = async (): Promise<ClassConfig[]> => {
         id: student.id,
         name: student.name,
         email: student.email,
-        studentNumber: student.student_number || undefined, // Include student number
+        studentNumber: student.student_number || undefined,
         hasUsedToken: student.tokens_remaining <= 0,
-        hasBid: false // This would need to be calculated from bids table
+        hasBid: student.token_status === 'used'
       }))
 
-      const bidOpportunities: BidOpportunity[] = (opportunitiesData || []).map(opp => ({
+      // Create bid opportunities with real-time bid counts
+      let bidOpportunities: BidOpportunity[] = (opportunitiesData || []).map(opp => ({
         id: opp.id,
         date: opp.closes_at,
         bidOpenDate: opp.opens_at,
         title: `Bidding Opportunity - ${new Date(opp.event_date).toLocaleDateString()}`,
         description: opp.description,
-        bidders: [], // This would need to be fetched from bids table
-        selectedStudents: [], // This would need to be fetched from selections table
+        bidders: [], // Will be populated with real data below
+        selectedStudents: [],
         isOpen: opp.status === 'open',
         capacity: opp.capacity
       }))
 
+      // Update opportunities with real bid counts
+      bidOpportunities = await updateBidOpportunitiesWithCounts(bidOpportunities, classRecord.id)
+
+      // Get students who have bid (from the bid tracking system)
+      const bidStatistics = await getClassBidStatistics(classRecord.id)
+      const studentsWhoBid = students.filter(s => s.hasBid)
+
       const classConfig: ClassConfig = {
         id: classRecord.id,
         className: classRecord.name,
-        password: classRecord.password_hash, // In production, don't expose the hash
+        password: classRecord.password_hash,
         rewardTitle: "Dinner with Professor",
         rewardDescription: "Join the professor for dinner and discussion at a local restaurant.",
         capacity: classRecord.capacity_default,
         students,
-        bidders: students.filter(s => s.hasBid),
+        bidders: studentsWhoBid,
         selectedStudents: [],
         bidOpportunities
       }
@@ -505,7 +514,7 @@ export const addStudentsToClass = async (classId: string, students: Omit<Student
       class_id: classId,
       name: student.name,
       email: student.email,
-      student_number: student.studentNumber || null, // Include student number as string
+      student_number: student.studentNumber || null,
       tokens_remaining: 1
     }))
 

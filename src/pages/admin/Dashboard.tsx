@@ -7,7 +7,8 @@ import { ClassConfig, BidOpportunity } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { formatDate, getBidOpportunityStatus } from "@/utils/dates";
 import EditBidOpportunityDialog from "@/components/admin/EditBidOpportunityDialog";
-import { Trash2, AlertTriangle, Users, Coins, Settings, Plus, Edit, Info, Eye, EyeOff, Loader2 } from "lucide-react";
+import { useRealtimeBidTracking } from "@/hooks/useRealtimeBidTracking";
+import { Trash2, AlertTriangle, Users, Coins, Settings, Plus, Edit, Info, Eye, EyeOff, Loader2, RefreshCw } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -61,6 +62,9 @@ const Dashboard = ({
   const [eventDate, setEventDate] = useState<Date | undefined>(undefined);
   const [bidOpenDate, setBidOpenDate] = useState<Date | undefined>(undefined);
   const [capacity, setCapacity] = useState<string>("");
+
+  // Use real-time bid tracking
+  const { statistics, isLoading: statsLoading, refresh: refreshStats } = useRealtimeBidTracking(currentClass?.id || null);
   
   // Get the selected opportunity if there is one
   const selectedOpportunity = currentClass?.bidOpportunities?.find(
@@ -141,6 +145,9 @@ const Dashboard = ({
       
       resetCreateForm();
       setShowCreateOpportunityDialog(false);
+      
+      // Refresh statistics to show the new opportunity
+      refreshStats();
     } catch (error) {
       console.error("Error creating opportunity:", error);
       toast({
@@ -164,6 +171,9 @@ const Dashboard = ({
         title: "Opportunity deleted",
         description: "The bidding opportunity has been deleted successfully",
       });
+      
+      // Refresh statistics after deletion
+      refreshStats();
     } catch (error) {
       console.error("Error deleting opportunity:", error);
       toast({
@@ -188,6 +198,9 @@ const Dashboard = ({
     
     // Update the class reward configuration
     onUpdateReward(updatedClass);
+    
+    // Refresh statistics to show updated data
+    refreshStats();
     
     toast({
       title: "Changes saved",
@@ -230,6 +243,12 @@ const Dashboard = ({
     }
   };
 
+  // Get real-time bid count for a specific opportunity
+  const getOpportunityBidCount = (opportunityId: string): number => {
+    const opportunityStats = statistics.opportunities.find(opp => opp.opportunityId === opportunityId);
+    return opportunityStats?.bidCount || 0;
+  };
+
   if (!currentClass) {
     return (
       <div className="container mx-auto p-4 md:p-6">
@@ -264,6 +283,15 @@ const Dashboard = ({
         <div className="flex space-x-3">
           <Button 
             variant="outline"
+            onClick={refreshStats}
+            disabled={statsLoading}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`w-4 h-4 ${statsLoading ? 'animate-spin' : ''}`} />
+            Refresh Data
+          </Button>
+          <Button 
+            variant="outline"
             onClick={() => setShowPasswordDialog(true)}
             className="flex items-center gap-2"
           >
@@ -280,7 +308,7 @@ const Dashboard = ({
         </div>
       </div>
 
-      {/* Statistics Cards */}
+      {/* Real-time Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -288,7 +316,9 @@ const Dashboard = ({
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{currentClass.students.length}</div>
+            <div className="text-2xl font-bold">
+              {statsLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : statistics.totalStudents}
+            </div>
             <p className="text-xs text-muted-foreground">
               Total enrolled
             </p>
@@ -302,7 +332,7 @@ const Dashboard = ({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {currentClass.students.filter(s => !s.hasUsedToken).length}
+              {statsLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : statistics.studentsWithTokens}
             </div>
             <p className="text-xs text-muted-foreground">
               Ready to bid
@@ -317,7 +347,7 @@ const Dashboard = ({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
-              {currentClass.bidders.length}
+              {statsLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : statistics.studentsWhoBid}
             </div>
             <p className="text-xs text-muted-foreground">
               Have placed bids
@@ -345,8 +375,10 @@ const Dashboard = ({
               <p className="text-lg font-mono bg-gray-100 px-3 py-1 rounded mt-1">{currentClass.password}</p>
             </div>
             <div>
-              <Label className="text-sm font-medium text-gray-500">Bid Opportunities</Label>
-              <p className="text-lg font-semibold mt-1">{currentClass.bidOpportunities?.length || 0}</p>
+              <Label className="text-sm font-medium text-gray-500">Total Bids</Label>
+              <p className="text-lg font-semibold mt-1 text-blue-600">
+                {statsLoading ? <Loader2 className="w-5 h-5 animate-spin inline" /> : statistics.totalBids}
+              </p>
             </div>
           </div>
         </CardContent>
@@ -380,195 +412,179 @@ const Dashboard = ({
                       <TableHead>Event Date</TableHead>
                       <TableHead>Bidding Opens</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Bidders</TableHead>
+                      <TableHead>Current Bids</TableHead>
                       <TableHead>Selected</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {currentClass.bidOpportunities.map((opportunity) => (
-                      <>
-                        <TableRow 
-                          key={opportunity.id}
-                          className={selectedOpportunityId === opportunity.id ? "bg-academy-lightBlue/10" : ""}
-                        >
-                          <TableCell className="font-medium">{opportunity.title}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">
-                              {opportunity.capacity || currentClass.capacity} students
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{formatDate(opportunity.date)}</TableCell>
-                          <TableCell>{opportunity.bidOpenDate ? formatDate(opportunity.bidOpenDate) : "1 week before"}</TableCell>
-                          <TableCell>
-                            <Badge variant={getBidOpportunityStatus(opportunity) === "Open for Bidding" ? "default" : "secondary"}>
-                              {getBidOpportunityStatus(opportunity)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{opportunity.bidders.length}</TableCell>
-                          <TableCell>{opportunity.selectedStudents?.length || 0}</TableCell>
-                          <TableCell>
-                            <div className="flex space-x-2">
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                onClick={() => setSelectedOpportunityId(
-                                  selectedOpportunityId === opportunity.id ? null : opportunity.id
+                    {currentClass.bidOpportunities.map((opportunity) => {
+                      const realTimeBidCount = getOpportunityBidCount(opportunity.id);
+                      
+                      return (
+                        <>
+                          <TableRow 
+                            key={opportunity.id}
+                            className={selectedOpportunityId === opportunity.id ? "bg-academy-lightBlue/10" : ""}
+                          >
+                            <TableCell className="font-medium">{opportunity.title}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">
+                                {opportunity.capacity || currentClass.capacity} students
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{formatDate(opportunity.date)}</TableCell>
+                            <TableCell>{opportunity.bidOpenDate ? formatDate(opportunity.bidOpenDate) : "1 week before"}</TableCell>
+                            <TableCell>
+                              <Badge variant={getBidOpportunityStatus(opportunity) === "Open for Bidding" ? "default" : "secondary"}>
+                                {getBidOpportunityStatus(opportunity)}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="default" className="bg-blue-500">
+                                  {statsLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : realTimeBidCount}
+                                </Badge>
+                                {realTimeBidCount > (opportunity.capacity || currentClass.capacity) && (
+                                  <Badge variant="destructive" className="text-xs">
+                                    Over capacity
+                                  </Badge>
                                 )}
-                                className="flex items-center gap-1"
-                              >
-                                {selectedOpportunityId === opportunity.id ? (
-                                  <>
-                                    <EyeOff className="w-4 h-4" />
-                                    Hide Details
-                                  </>
-                                ) : (
-                                  <>
-                                    <Eye className="w-4 h-4" />
-                                    View Details
-                                  </>
-                                )}
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEditOpportunity(opportunity);
-                                }}
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              <Button 
-                                variant="destructive" 
-                                size="sm"
-                                onClick={() => handleDeleteOpportunity(opportunity.id)}
-                                disabled={isDeleting === opportunity.id}
-                              >
-                                {isDeleting === opportunity.id ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <Trash2 className="w-4 h-4" />
-                                )}
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-
-                        {/* Student Overview Section - Only shown when expanded */}
-                        {selectedOpportunityId === opportunity.id && (
-                          <TableRow>
-                            <TableCell colSpan={8} className="p-0">
-                              <div className="bg-blue-50/50 border-l-4 border-l-academy-blue p-6">
-                                <h3 className="text-lg font-semibold mb-4 text-academy-blue">
-                                  Student Overview: {opportunity.title}
-                                </h3>
-                                
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                  {/* Active Bidders */}
-                                  <Card>
-                                    <CardHeader>
-                                      <CardTitle className="flex items-center gap-2 text-base">
-                                        <Users className="w-5 h-5" />
-                                        Active Bidders
-                                      </CardTitle>
-                                      <CardDescription>
-                                        Students who have placed bids for this opportunity
-                                      </CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                      {opportunity.bidders.length === 0 ? (
-                                        <div className="text-center py-4">
-                                          <Users className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                                          <p className="text-muted-foreground">No bids placed yet</p>
-                                        </div>
-                                      ) : (
-                                        <div className="space-y-3 max-h-40 overflow-y-auto">
-                                          {opportunity.bidders.map((student) => (
-                                            <div key={student.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                              <div>
-                                                <div className="font-medium">{student.name}</div>
-                                                <div className="text-sm text-muted-foreground">{student.email}</div>
-                                              </div>
-                                              <Badge variant="outline">Bidder</Badge>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      )}
-                                    </CardContent>
-                                  </Card>
-                                  
-                                  {/* Selected Students */}
-                                  <Card>
-                                    <CardHeader>
-                                      <CardTitle className="flex items-center gap-2 text-base">
-                                        <Users className="w-5 h-5 text-green-600" />
-                                        Selected Students
-                                      </CardTitle>
-                                      <CardDescription>
-                                        Students who were selected for this opportunity
-                                      </CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                      {opportunity.selectedStudents?.length === 0 || !opportunity.selectedStudents ? (
-                                        <div className="text-center py-4">
-                                          <Users className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                                          <p className="text-muted-foreground">No students selected yet</p>
-                                        </div>
-                                      ) : (
-                                        <div className="space-y-3 max-h-40 overflow-y-auto">
-                                          {opportunity.selectedStudents.map((student) => (
-                                            <div key={student.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
-                                              <div>
-                                                <div className="font-medium">{student.name}</div>
-                                                <div className="text-sm text-muted-foreground">{student.email}</div>
-                                              </div>
-                                              <Badge className="bg-green-500">Selected</Badge>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      )}
-                                    </CardContent>
-                                  </Card>
-                                </div>
-
-                                {/* Capacity Status Indicator */}
-                                <div className="mt-6">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <Label className="text-sm font-medium text-gray-600">Capacity Status</Label>
-                                    <span className="text-sm text-gray-500">
-                                      {opportunity.bidders.length} / {opportunity.capacity || currentClass.capacity} students
-                                    </span>
-                                  </div>
-                                  <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div 
-                                      className={`h-2 rounded-full transition-all duration-300 ${
-                                        opportunity.bidders.length > (opportunity.capacity || currentClass.capacity)
-                                          ? 'bg-red-500' 
-                                          : opportunity.bidders.length === (opportunity.capacity || currentClass.capacity)
-                                          ? 'bg-yellow-500'
-                                          : 'bg-green-500'
-                                      }`}
-                                      style={{ 
-                                        width: `${Math.min((opportunity.bidders.length / (opportunity.capacity || currentClass.capacity)) * 100, 100)}%` 
-                                      }}
-                                    />
-                                  </div>
-                                  <p className="text-xs text-gray-500 mt-1">
-                                    {opportunity.bidders.length > (opportunity.capacity || currentClass.capacity)
-                                      ? `${opportunity.bidders.length - (opportunity.capacity || currentClass.capacity)} students over capacity - random selection will be required`
-                                      : opportunity.bidders.length === (opportunity.capacity || currentClass.capacity)
-                                      ? "At full capacity - all bidders can be selected"
-                                      : `${(opportunity.capacity || currentClass.capacity) - opportunity.bidders.length} spots remaining`
-                                    }
-                                  </p>
-                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>{opportunity.selectedStudents?.length || 0}</TableCell>
+                            <TableCell>
+                              <div className="flex space-x-2">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => setSelectedOpportunityId(
+                                    selectedOpportunityId === opportunity.id ? null : opportunity.id
+                                  )}
+                                  className="flex items-center gap-1"
+                                >
+                                  {selectedOpportunityId === opportunity.id ? (
+                                    <>
+                                      <EyeOff className="w-4 h-4" />
+                                      Hide Details
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Eye className="w-4 h-4" />
+                                      View Details
+                                    </>
+                                  )}
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEditOpportunity(opportunity);
+                                  }}
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button 
+                                  variant="destructive" 
+                                  size="sm"
+                                  onClick={() => handleDeleteOpportunity(opportunity.id)}
+                                  disabled={isDeleting === opportunity.id}
+                                >
+                                  {isDeleting === opportunity.id ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="w-4 h-4" />
+                                  )}
+                                </Button>
                               </div>
                             </TableCell>
                           </TableRow>
-                        )}
-                      </>
-                    ))}
+
+                          {/* Selected Opportunity Details */}
+                          {selectedOpportunityId === opportunity.id && (
+                            <TableRow>
+                              <TableCell colSpan={8} className="p-0">
+                                <div className="bg-blue-50/50 border-l-4 border-l-academy-blue p-6">
+                                  <h3 className="text-lg font-semibold mb-4 text-academy-blue">
+                                    Real-time Details: {opportunity.title}
+                                  </h3>
+                                  
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                      <Label className="text-sm font-medium text-gray-600">Description</Label>
+                                      <div className="mt-2 p-3 bg-white rounded-md border">
+                                        <p className="text-gray-800">{opportunity.description}</p>
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <Label className="text-sm font-medium text-gray-600">Live Statistics</Label>
+                                      <div className="mt-2 space-y-3">
+                                        <div className="flex justify-between items-center p-2 bg-white rounded border">
+                                          <span className="text-sm text-gray-600">Current Bids:</span>
+                                          <span className="font-medium text-blue-600">
+                                            {statsLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : realTimeBidCount}
+                                          </span>
+                                        </div>
+                                        <div className="flex justify-between items-center p-2 bg-white rounded border">
+                                          <span className="text-sm text-gray-600">Capacity:</span>
+                                          <span className="font-medium text-purple-600">
+                                            {opportunity.capacity || currentClass.capacity} students
+                                          </span>
+                                        </div>
+                                        <div className="flex justify-between items-center p-2 bg-white rounded border">
+                                          <span className="text-sm text-gray-600">Status:</span>
+                                          <Badge variant={realTimeBidCount > (opportunity.capacity || currentClass.capacity) ? "destructive" : "default"}>
+                                            {realTimeBidCount > (opportunity.capacity || currentClass.capacity) 
+                                              ? "Over Capacity" 
+                                              : realTimeBidCount === (opportunity.capacity || currentClass.capacity)
+                                              ? "At Capacity"
+                                              : "Available Spots"
+                                            }
+                                          </Badge>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Capacity Status Indicator */}
+                                  <div className="mt-4">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <Label className="text-sm font-medium text-gray-600">Live Capacity Status</Label>
+                                      <span className="text-sm text-gray-500">
+                                        {realTimeBidCount} / {opportunity.capacity || currentClass.capacity} students
+                                      </span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                      <div 
+                                        className={`h-2 rounded-full transition-all duration-300 ${
+                                          realTimeBidCount > (opportunity.capacity || currentClass.capacity)
+                                            ? 'bg-red-500' 
+                                            : realTimeBidCount === (opportunity.capacity || currentClass.capacity)
+                                            ? 'bg-yellow-500'
+                                            : 'bg-green-500'
+                                        }`}
+                                        style={{ 
+                                          width: `${Math.min((realTimeBidCount / (opportunity.capacity || currentClass.capacity)) * 100, 100)}%` 
+                                        }}
+                                      />
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      {realTimeBidCount > (opportunity.capacity || currentClass.capacity)
+                                        ? `${realTimeBidCount - (opportunity.capacity || currentClass.capacity)} students over capacity - random selection will be required`
+                                        : realTimeBidCount === (opportunity.capacity || currentClass.capacity)
+                                        ? "At full capacity - all bidders can be selected"
+                                        : `${(opportunity.capacity || currentClass.capacity) - realTimeBidCount} spots remaining`
+                                      }
+                                    </p>
+                                  </div>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -771,9 +787,9 @@ const Dashboard = ({
                 <AlertDescription>
                   <strong>WARNING:</strong> Deleting this class will remove:
                   <ul className="list-disc list-inside mt-2 space-y-1">
-                    <li>{currentClass.students.length} student records</li>
+                    <li>{statistics.totalStudents} student records</li>
                     <li>{currentClass.bidOpportunities.length} bidding opportunities</li>
-                    <li>All associated bids and token history</li>
+                    <li>{statistics.totalBids} bids and token history</li>
                     <li>Any dinner tables created for this class</li>
                   </ul>
                 </AlertDescription>
