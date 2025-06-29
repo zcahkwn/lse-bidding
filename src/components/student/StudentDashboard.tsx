@@ -2,11 +2,14 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import EnhancedBidCard from "@/components/student/EnhancedBidCard";
 import { Student, ClassConfig, BidOpportunity } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { formatDate, getBidOpportunityStatus } from "@/utils/dates";
 import { useNavigate, useLocation } from "react-router-dom";
+import { BookOpen, Users, Coins, RefreshCw, ChevronDown } from "lucide-react";
 
 const StudentDashboard = () => {
   const { toast } = useToast();
@@ -15,35 +18,39 @@ const StudentDashboard = () => {
   
   // Get student and class data from location state
   const initialStudent = location.state?.student || null;
-  const classConfig = location.state?.classConfig || null;
+  const initialClassConfig = location.state?.classConfig || null;
+  const enrolledClasses = location.state?.enrolledClasses || [initialClassConfig].filter(Boolean);
   
-  // Use local state to track and update student's token status
+  // Use local state to track current class and student
   const [student, setStudent] = useState<Student | null>(initialStudent);
+  const [currentClass, setCurrentClass] = useState<ClassConfig | null>(initialClassConfig);
+  const [availableClasses, setAvailableClasses] = useState<ClassConfig[]>(enrolledClasses);
   
   // Load the latest class configuration from localStorage on component mount
   useEffect(() => {
-    if (student && classConfig) {
+    if (student && currentClass) {
       const storedClassesStr = localStorage.getItem("classData");
       if (storedClassesStr) {
         try {
           const storedClasses = JSON.parse(storedClassesStr);
-          // Find the current class in the stored data
-          const updatedClass = storedClasses.find((c: ClassConfig) => c.id === classConfig.id);
-          if (updatedClass) {
-            // Update student data from the stored data
-            const updatedStudent = updatedClass.students.find((s: Student) => s.id === student.id);
+          
+          // Update available classes with latest data
+          const updatedAvailableClasses = availableClasses.map(enrolledClass => {
+            const updatedClass = storedClasses.find((c: ClassConfig) => c.id === enrolledClass.id);
+            return updatedClass || enrolledClass;
+          });
+          setAvailableClasses(updatedAvailableClasses);
+          
+          // Update current class
+          const updatedCurrentClass = storedClasses.find((c: ClassConfig) => c.id === currentClass.id);
+          if (updatedCurrentClass) {
+            setCurrentClass(updatedCurrentClass);
+            
+            // Update student data from the current class
+            const updatedStudent = updatedCurrentClass.students.find((s: Student) => s.id === student.id);
             if (updatedStudent) {
               setStudent(updatedStudent);
             }
-            
-            // Update location state to include the latest class config
-            navigate(location.pathname, {
-              replace: true,
-              state: {
-                student: updatedStudent || student,
-                classConfig: updatedClass
-              }
-            });
           }
         } catch (error) {
           console.error("Error parsing stored class data:", error);
@@ -52,7 +59,31 @@ const StudentDashboard = () => {
     }
   }, []);
   
-  if (!student || !classConfig) {
+  const handleClassSwitch = (classId: string) => {
+    const selectedClass = availableClasses.find(c => c.id === classId);
+    if (selectedClass && student) {
+      // Find the student record in the selected class
+      const studentInClass = selectedClass.students.find(s => s.email === student.email && s.studentNumber === student.studentNumber);
+      
+      if (studentInClass) {
+        setCurrentClass(selectedClass);
+        setStudent(studentInClass);
+        
+        toast({
+          title: "Switched class",
+          description: `Now viewing ${selectedClass.className}`,
+        });
+      } else {
+        toast({
+          title: "Error switching class",
+          description: "Could not find your record in the selected class",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+  
+  if (!student || !currentClass) {
     return (
       <div className="container mx-auto p-4">
         <h1 className="text-2xl font-heading font-bold mb-6">Student Dashboard</h1>
@@ -67,7 +98,7 @@ const StudentDashboard = () => {
   }
   
   // Ensure bidOpportunities exists, default to empty array if not
-  const bidOpportunities = classConfig.bidOpportunities || [];
+  const bidOpportunities = currentClass.bidOpportunities || [];
   
   // Find first open opportunity (if any)
   const nextOpenOpportunity = bidOpportunities.find(
@@ -91,7 +122,7 @@ const StudentDashboard = () => {
         
         // Find and update the current class
         const updatedClasses = storedClasses.map((c: ClassConfig) => {
-          if (c.id === classConfig.id) {
+          if (c.id === currentClass.id) {
             // Update the student in the students array
             const updatedStudents = c.students.map((s: Student) => 
               s.id === updatedStudent.id ? updatedStudent : s
@@ -134,19 +165,19 @@ const StudentDashboard = () => {
         localStorage.setItem("classData", JSON.stringify(updatedClasses));
         
         // Find the updated class config to use for state updates
-        const updatedClassConfig = updatedClasses.find((c: ClassConfig) => c.id === classConfig.id);
+        const updatedClassConfig = updatedClasses.find((c: ClassConfig) => c.id === currentClass.id);
         
         // Update UI state
         setStudent(updatedStudent);
+        setCurrentClass(updatedClassConfig);
         
-        // Update location state to reflect the changes for page refreshes
-        navigate(location.pathname, {
-          replace: true,
-          state: {
-            student: updatedStudent,
-            classConfig: updatedClassConfig
-          }
+        // Update available classes as well
+        const updatedAvailableClasses = availableClasses.map(availableClass => {
+          const updated = updatedClasses.find((c: ClassConfig) => c.id === availableClass.id);
+          return updated || availableClass;
         });
+        setAvailableClasses(updatedAvailableClasses);
+        
       } catch (error) {
         console.error("Error updating class data:", error);
       }
@@ -169,16 +200,116 @@ const StudentDashboard = () => {
           <h1 className="text-2xl font-heading font-bold">Student Dashboard</h1>
           <p className="text-muted-foreground">Welcome, {student.name}</p>
         </div>
-        <Button variant="outline" onClick={handleLogout} className="mt-4 md:mt-0">
-          Logout
-        </Button>
+        <div className="flex items-center gap-4 mt-4 md:mt-0">
+          {/* Class Switcher */}
+          {availableClasses.length > 1 && (
+            <div className="flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-muted-foreground" />
+              <Select value={currentClass.id} onValueChange={handleClassSwitch}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Select class" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableClasses.map((classConfig) => {
+                    const studentInClass = classConfig.students.find(s => s.email === student.email);
+                    const hasUsedToken = studentInClass?.hasUsedToken || false;
+                    
+                    return (
+                      <SelectItem key={classConfig.id} value={classConfig.id}>
+                        <div className="flex items-center justify-between w-full">
+                          <span>{classConfig.className}</span>
+                          <Badge 
+                            variant={hasUsedToken ? "secondary" : "default"} 
+                            className="ml-2 text-xs"
+                          >
+                            {hasUsedToken ? "Token Used" : "Token Available"}
+                          </Badge>
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          
+          <Button variant="outline" onClick={handleLogout}>
+            Logout
+          </Button>
+        </div>
       </div>
+
+      {/* Multi-class overview */}
+      {availableClasses.length > 1 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg font-heading flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              Your Classes Overview
+            </CardTitle>
+            <CardDescription>
+              You're enrolled in {availableClasses.length} classes
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {availableClasses.map((classConfig) => {
+                const studentInClass = classConfig.students.find(s => s.email === student.email);
+                const hasUsedToken = studentInClass?.hasUsedToken || false;
+                const activeBidOpportunities = classConfig.bidOpportunities?.filter(opp => 
+                  getBidOpportunityStatus(opp) === "Open for Bidding"
+                ).length || 0;
+                const isCurrentClass = classConfig.id === currentClass.id;
+
+                return (
+                  <Card 
+                    key={classConfig.id} 
+                    className={`cursor-pointer transition-all ${
+                      isCurrentClass 
+                        ? 'border-blue-500 bg-blue-50' 
+                        : 'hover:shadow-md hover:border-gray-300'
+                    }`}
+                    onClick={() => !isCurrentClass && handleClassSwitch(classConfig.id)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-semibold">{classConfig.className}</h3>
+                        {isCurrentClass && (
+                          <Badge variant="default" className="text-xs">Current</Badge>
+                        )}
+                      </div>
+                      
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Token:</span>
+                          <Badge variant={hasUsedToken ? "secondary" : "default"} className="text-xs">
+                            {hasUsedToken ? "Used" : "Available"}
+                          </Badge>
+                        </div>
+                        
+                        {activeBidOpportunities > 0 && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">Active opportunities:</span>
+                            <Badge variant="outline" className="text-xs">
+                              {activeBidOpportunities}
+                            </Badge>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg font-heading">Token Status</CardTitle>
+              <CardTitle className="text-lg font-heading">Token Status - {currentClass.className}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
@@ -278,7 +409,7 @@ const StudentDashboard = () => {
         <div>
           <EnhancedBidCard 
             student={student}
-            classConfig={classConfig}
+            classConfig={currentClass}
             onBidSubmitted={handleBidSubmitted}
           />
           
@@ -297,12 +428,16 @@ const StudentDashboard = () => {
                   <div className="col-span-2">{student.email}</div>
                 </div>
                 <div className="grid grid-cols-3 gap-1">
-                  <div className="text-sm text-muted-foreground">Class:</div>
-                  <div className="col-span-2">{classConfig.className}</div>
+                  <div className="text-sm text-muted-foreground">Student Number:</div>
+                  <div className="col-span-2">{student.studentNumber}</div>
+                </div>
+                <div className="grid grid-cols-3 gap-1">
+                  <div className="text-sm text-muted-foreground">Current Class:</div>
+                  <div className="col-span-2">{currentClass.className}</div>
                 </div>
                 <div className="grid grid-cols-3 gap-1">
                   <div className="text-sm text-muted-foreground">Current Reward:</div>
-                  <div className="col-span-2">{classConfig.rewardTitle}</div>
+                  <div className="col-span-2">{currentClass.rewardTitle}</div>
                 </div>
                 <div className="grid grid-cols-3 gap-1">
                   <div className="text-sm text-muted-foreground">Token Status:</div>
@@ -320,6 +455,14 @@ const StudentDashboard = () => {
                     <div className="text-sm text-muted-foreground">Token Used For:</div>
                     <div className="col-span-2 text-sm">
                       {tokenUsedOpportunity.title}
+                    </div>
+                  </div>
+                )}
+                {availableClasses.length > 1 && (
+                  <div className="grid grid-cols-3 gap-1">
+                    <div className="text-sm text-muted-foreground">Enrolled Classes:</div>
+                    <div className="col-span-2 text-sm">
+                      {availableClasses.length} classes
                     </div>
                   </div>
                 )}

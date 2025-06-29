@@ -19,7 +19,7 @@ import StudentDashboard from "@/components/student/StudentDashboard";
 import { Student, ClassConfig, AuthState, BidOpportunity } from "@/types";
 import { initialAuthState, logout } from "@/utils/auth";
 import { createClass, fetchClasses, updateClass, deleteClassAtomic, updateBidOpportunity, ClassDeletionResult } from "@/lib/classService";
-import { Loader2, AlertTriangle, CheckCircle, Trash2, Menu, X } from "lucide-react";
+import { Loader2, AlertTriangle, CheckCircle, Trash2, Menu, X, Info } from "lucide-react";
 
 const Index = () => {
   // Auth state
@@ -645,9 +645,12 @@ const Index = () => {
                   id="classPassword"
                   value={newClassPassword}
                   onChange={(e) => setNewClassPassword(e.target.value)}
-                  placeholder="Create a password for students"
+                  placeholder="Create a password for admin access"
                   disabled={isCreatingClass}
                 />
+                <p className="text-xs text-muted-foreground">
+                  Note: Students no longer need class passwords to log in. This is only for admin access.
+                </p>
               </div>
             </div>
             
@@ -804,6 +807,9 @@ const Index = () => {
             <h1 className="text-3xl md:text-4xl font-heading font-bold text-academy-blue mb-3">
               Student Bidding System
             </h1>
+            <p className="text-muted-foreground text-lg">
+              Streamlined access - no class passwords needed for students!
+            </p>
           </div>
           
           <Tabs defaultValue="student" className="w-full">
@@ -828,6 +834,18 @@ const Index = () => {
               <AdminLoginForm onLogin={handleAdminLogin} />
             </TabsContent>
           </Tabs>
+
+          {/* Information about the new system */}
+          <div className="mt-8 max-w-2xl mx-auto">
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                <strong>What's New:</strong> Students can now log in with just their email and student number. 
+                If you're enrolled in multiple classes, you'll be able to choose which one to access and 
+                switch between them from your dashboard.
+              </AlertDescription>
+            </Alert>
+          </div>
         </div>
       </div>
       

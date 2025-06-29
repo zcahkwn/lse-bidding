@@ -27,53 +27,81 @@ export const authenticateAdmin = (username: string, password: string): AuthState
   return initialAuthState;
 };
 
-// Student authentication using both email AND student number
+// Student authentication using email and student number across all classes
+export const authenticateStudent = (
+  email: string,
+  studentNumber: string,
+  classes: ClassConfig[]
+): { 
+  success: boolean; 
+  student?: Student; 
+  enrolledClasses: ClassConfig[];
+  errorMessage?: string;
+} => {
+  const enrolledClasses: ClassConfig[] = [];
+  let foundStudent: Student | undefined;
+
+  // Search through all classes to find the student
+  for (const classConfig of classes) {
+    const student = classConfig.students.find(s => 
+      s.email.toLowerCase() === email.toLowerCase() &&
+      s.studentNumber && 
+      s.studentNumber.toLowerCase() === studentNumber.toLowerCase()
+    );
+    
+    if (student) {
+      enrolledClasses.push(classConfig);
+      if (!foundStudent) {
+        foundStudent = student; // Use the first found student record
+      }
+    }
+  }
+
+  if (!foundStudent || enrolledClasses.length === 0) {
+    return {
+      success: false,
+      enrolledClasses: [],
+      errorMessage: "No student found with these credentials across any class"
+    };
+  }
+
+  return {
+    success: true,
+    student: foundStudent,
+    enrolledClasses
+  };
+};
+
+// Create auth state for student with specific class
+export const createStudentAuthState = (
+  student: Student,
+  selectedClass: ClassConfig
+): AuthState => {
+  return {
+    ...initialAuthState,
+    isStudent: true,
+    currentStudent: student,
+    currentClass: selectedClass
+  };
+};
+
+// Legacy functions for backward compatibility (deprecated)
 export const authenticateStudentWithBoth = (
   email: string,
   studentNumber: string,
   password: string,
   classes: ClassConfig[]
 ): AuthState => {
-  // Find the class with the matching password
-  const foundClass = classes.find(c => c.password === password);
+  // This function is now deprecated but kept for compatibility
+  // It will use the new authentication method and ignore the password
+  const result = authenticateStudent(email, studentNumber, classes);
   
-  if (!foundClass) return initialAuthState;
+  if (result.success && result.student && result.enrolledClasses.length > 0) {
+    // Return auth state with the first enrolled class
+    return createStudentAuthState(result.student, result.enrolledClasses[0]);
+  }
   
-  // Find the student in the class by BOTH email AND student number
-  const student = foundClass.students.find(s => 
-    s.email.toLowerCase() === email.toLowerCase() &&
-    s.studentNumber && 
-    s.studentNumber.toLowerCase() === studentNumber.toLowerCase()
-  );
-  
-  if (!student) return initialAuthState;
-  
-  return {
-    ...initialAuthState,
-    isStudent: true,
-    currentStudent: student,
-    currentClass: foundClass
-  };
-};
-
-// Legacy functions for backward compatibility (if needed elsewhere)
-export const authenticateStudent = (
-  email: string, 
-  password: string,
-  classes: ClassConfig[]
-): AuthState => {
-  const foundClass = classes.find(c => c.password === password);
-  if (!foundClass) return initialAuthState;
-  
-  const student = foundClass.students.find(s => s.email.toLowerCase() === email.toLowerCase());
-  if (!student) return initialAuthState;
-  
-  return {
-    ...initialAuthState,
-    isStudent: true,
-    currentStudent: student,
-    currentClass: foundClass
-  };
+  return initialAuthState;
 };
 
 export const authenticateStudentByNumber = (
@@ -81,20 +109,8 @@ export const authenticateStudentByNumber = (
   password: string,
   classes: ClassConfig[]
 ): AuthState => {
-  const foundClass = classes.find(c => c.password === password);
-  if (!foundClass) return initialAuthState;
-  
-  const student = foundClass.students.find(s => 
-    s.studentNumber && s.studentNumber.toLowerCase() === studentNumber.toLowerCase()
-  );
-  if (!student) return initialAuthState;
-  
-  return {
-    ...initialAuthState,
-    isStudent: true,
-    currentStudent: student,
-    currentClass: foundClass
-  };
+  // Deprecated - kept for compatibility
+  return initialAuthState;
 };
 
 // Log out function
