@@ -517,7 +517,7 @@ const Index = () => {
         />
         
         <main className={`min-h-[calc(100vh-64px)] transition-all duration-300 ${
-          sidebarCollapsed ? 'ml-16' : 'ml-64'
+          sidebarCollapsed ? 'ml-16' : 'ml-80'
         }`}>
           <div className="container mx-auto p-4">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
