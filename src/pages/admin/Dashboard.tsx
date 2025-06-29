@@ -660,9 +660,6 @@ const Dashboard = ({
                 />
                 <span className="text-sm text-muted-foreground">students</span>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Number of students for this opportunity (0 or any positive number)
-              </p>
             </div>
           </div>
           <DialogFooter>
