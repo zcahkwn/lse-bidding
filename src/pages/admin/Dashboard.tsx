@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ClassConfig, BidOpportunity } from "@/types";
@@ -9,11 +8,12 @@ import { useToast } from "@/hooks/use-toast";
 import { formatDate, getBidOpportunityStatus } from "@/utils/dates";
 import EditBidOpportunityDialog from "@/components/admin/EditBidOpportunityDialog";
 import BidOpportunityManager from "@/components/admin/BidOpportunityManager";
-import { Trash2, AlertTriangle, Users, Coins, Calendar, Settings } from "lucide-react";
+import { Trash2, AlertTriangle, Users, Coins, Calendar, Settings, Plus, Edit } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
 
 interface DashboardProps {
   classes: ClassConfig[];
@@ -45,6 +45,7 @@ const Dashboard = ({
   const [editingOpportunity, setEditingOpportunity] = useState<BidOpportunity | null>(null);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [showRemoveConfirmDialog, setShowRemoveConfirmDialog] = useState(false);
+  const [showOpportunityManager, setShowOpportunityManager] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmDelete, setConfirmDelete] = useState("");
   
@@ -131,11 +132,12 @@ const Dashboard = ({
   }
 
   return (
-    <div className="container mx-auto p-4 md:p-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="container mx-auto p-4 md:p-6 space-y-8">
+      {/* Header Section */}
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-heading font-bold">Class Management</h1>
-          <p className="text-muted-foreground">Managing: {currentClass.className}</p>
+          <h1 className="text-3xl font-heading font-bold">Class Management</h1>
+          <p className="text-muted-foreground text-lg">Managing: {currentClass.className}</p>
         </div>
         <div className="flex space-x-3">
           <Button 
@@ -143,6 +145,7 @@ const Dashboard = ({
             onClick={() => setShowPasswordDialog(true)}
             className="flex items-center gap-2"
           >
+            <Settings className="w-4 h-4" />
             Change Password
           </Button>
           <Button 
@@ -155,8 +158,8 @@ const Dashboard = ({
         </div>
       </div>
 
-      {/* Class Information Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Students</CardTitle>
@@ -199,62 +202,73 @@ const Dashboard = ({
             </p>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Capacity</CardTitle>
+            <Calendar className="h-4 w-4 text-purple-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-purple-600">
+              {currentClass.capacity}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Max students per event
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Class Details Card */}
-      <Card className="mb-6">
+      {/* Class Details Section */}
+      <Card>
         <CardHeader>
-          <CardTitle>Class Details</CardTitle>
+          <CardTitle className="text-xl">Class Details</CardTitle>
           <CardDescription>
             Configuration and settings for {currentClass.className}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
-                <Label className="text-sm font-medium text-gray-500">Class Name</Label>
-                <p className="text-lg font-semibold">{currentClass.className}</p>
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-500">Class Password</Label>
-                <p className="text-lg font-mono bg-gray-100 px-3 py-1 rounded">{currentClass.password}</p>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <Label className="text-sm font-medium text-gray-500">Class Name</Label>
+              <p className="text-lg font-semibold mt-1">{currentClass.className}</p>
             </div>
-            <div className="space-y-4">
-              <div>
-                <Label className="text-sm font-medium text-gray-500">Bid Opportunities</Label>
-                <p className="text-lg font-semibold">{currentClass.bidOpportunities?.length || 0}</p>
-              </div>
+            <div>
+              <Label className="text-sm font-medium text-gray-500">Class Password</Label>
+              <p className="text-lg font-mono bg-gray-100 px-3 py-1 rounded mt-1">{currentClass.password}</p>
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-gray-500">Bid Opportunities</Label>
+              <p className="text-lg font-semibold mt-1">{currentClass.bidOpportunities?.length || 0}</p>
             </div>
           </div>
         </CardContent>
       </Card>
-      
-      <Tabs defaultValue="opportunities" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="opportunities">Bidding Opportunities</TabsTrigger>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="opportunities">
-          <BidOpportunityManager
-            currentClass={currentClass}
-            onOpportunityCreated={onOpportunityCreated || (() => {})}
-            onOpportunityDeleted={onOpportunityDeleted || (() => {})}
-            onEditOpportunity={handleEditOpportunity}
-          />
-        </TabsContent>
-        
-        <TabsContent value="overview">
-          {currentClass.bidOpportunities && currentClass.bidOpportunities.length > 0 && (
-            <div className="mb-6">
-              <h2 className="text-xl font-heading mb-4">Bidding Opportunities Overview</h2>
+
+      {/* Bidding Opportunities Section */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-heading font-bold">Bidding Opportunities</h2>
+            <p className="text-muted-foreground">Manage bidding opportunities for {currentClass.className}</p>
+          </div>
+          <Button 
+            onClick={() => setShowOpportunityManager(true)}
+            className="flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Add Opportunity
+          </Button>
+        </div>
+
+        {currentClass.bidOpportunities && currentClass.bidOpportunities.length > 0 ? (
+          <Card>
+            <CardContent className="p-0">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Title</TableHead>
-                    <TableHead>Date</TableHead>
+                    <TableHead>Event Date</TableHead>
                     <TableHead>Bidding Opens</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Bidders</TableHead>
@@ -297,7 +311,7 @@ const Dashboard = ({
                               handleEditOpportunity(opportunity);
                             }}
                           >
-                            Edit
+                            <Edit className="w-4 h-4" />
                           </Button>
                         </div>
                       </TableCell>
@@ -305,100 +319,167 @@ const Dashboard = ({
                   ))}
                 </TableBody>
               </Table>
-            </div>
-          )}
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <Calendar className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No Bidding Opportunities</h3>
+              <p className="text-muted-foreground mb-4">
+                Create your first bidding opportunity to get started.
+              </p>
+              <Button onClick={() => setShowOpportunityManager(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Create First Opportunity
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Student Overview Section */}
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-heading font-bold">Student Overview</h2>
+          <p className="text-muted-foreground">Current bidding activity and selections</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                Active Bidders
+              </CardTitle>
+              <CardDescription>
+                {selectedOpportunity 
+                  ? `Students who have placed bids for ${selectedOpportunity.title}`
+                  : `Students who have placed bids for any opportunity`}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {selectedOpportunity ? (
+                selectedOpportunity.bidders.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Users className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                    <p className="text-muted-foreground">No bids placed yet for this opportunity</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-60 overflow-y-auto">
+                    {selectedOpportunity.bidders.map((student) => (
+                      <div key={student.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                          <div className="font-medium">{student.name}</div>
+                          <div className="text-sm text-muted-foreground">{student.email}</div>
+                        </div>
+                        <Badge variant="outline">Bidder</Badge>
+                      </div>
+                    ))}
+                  </div>
+                )
+              ) : (
+                currentClass.bidders.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Users className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                    <p className="text-muted-foreground">No bids placed yet for any opportunity</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-60 overflow-y-auto">
+                    {currentClass.bidders.map((student) => (
+                      <div key={student.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                          <div className="font-medium">{student.name}</div>
+                          <div className="text-sm text-muted-foreground">{student.email}</div>
+                        </div>
+                        <Badge variant="outline">Bidder</Badge>
+                      </div>
+                    ))}
+                  </div>
+                )
+              )}
+            </CardContent>
+          </Card>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Active Bidders</CardTitle>
-                <CardDescription>
-                  {selectedOpportunity 
-                    ? `Students who have placed bids for ${selectedOpportunity.title}`
-                    : `Students who have placed bids for any opportunity`}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {selectedOpportunity ? (
-                  selectedOpportunity.bidders.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-4">
-                      No bids placed yet for this opportunity
-                    </p>
-                  ) : (
-                    <div className="space-y-2 max-h-60 overflow-y-auto">
-                      {selectedOpportunity.bidders.map((student) => (
-                        <div key={student.id} className="p-2 bg-gray-50 rounded-md">
-                          <div className="font-medium">{student.name}</div>
-                          <div className="text-sm text-muted-foreground">{student.email}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-green-600" />
+                Selected Students
+              </CardTitle>
+              <CardDescription>
+                {selectedOpportunity 
+                  ? `Students who were selected for ${selectedOpportunity.title}`
+                  : `Students who were selected for the current reward`}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {selectedOpportunity ? (
+                selectedOpportunity.selectedStudents?.length === 0 || !selectedOpportunity.selectedStudents ? (
+                  <div className="text-center py-8">
+                    <Users className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                    <p className="text-muted-foreground">No students have been selected yet for this opportunity</p>
+                  </div>
                 ) : (
-                  currentClass.bidders.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-4">
-                      No bids placed yet for any opportunity
-                    </p>
-                  ) : (
-                    <div className="space-y-2 max-h-60 overflow-y-auto">
-                      {currentClass.bidders.map((student) => (
-                        <div key={student.id} className="p-2 bg-gray-50 rounded-md">
+                  <div className="space-y-3 max-h-60 overflow-y-auto">
+                    {selectedOpportunity.selectedStudents.map((student) => (
+                      <div key={student.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                        <div>
                           <div className="font-medium">{student.name}</div>
                           <div className="text-sm text-muted-foreground">{student.email}</div>
                         </div>
-                      ))}
-                    </div>
-                  )
-                )}
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Selected Students</CardTitle>
-                <CardDescription>
-                  {selectedOpportunity 
-                    ? `Students who were selected for ${selectedOpportunity.title}`
-                    : `Students who were selected for the current reward`}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {selectedOpportunity ? (
-                  selectedOpportunity.selectedStudents?.length === 0 || !selectedOpportunity.selectedStudents ? (
-                    <p className="text-center text-muted-foreground py-4">
-                      No students have been selected yet for this opportunity
-                    </p>
-                  ) : (
-                    <div className="space-y-2 max-h-60 overflow-y-auto">
-                      {selectedOpportunity.selectedStudents.map((student) => (
-                        <div key={student.id} className="p-2 bg-academy-lightBlue/10 rounded-md">
-                          <div className="font-medium">{student.name}</div>
-                          <div className="text-sm text-muted-foreground">{student.email}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )
+                        <Badge className="bg-green-500">Selected</Badge>
+                      </div>
+                    ))}
+                  </div>
+                )
+              ) : (
+                currentClass.selectedStudents?.length === 0 || !currentClass.selectedStudents ? (
+                  <div className="text-center py-8">
+                    <Users className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                    <p className="text-muted-foreground">No students have been selected yet</p>
+                  </div>
                 ) : (
-                  currentClass.selectedStudents?.length === 0 || !currentClass.selectedStudents ? (
-                    <p className="text-center text-muted-foreground py-4">
-                      No students have been selected yet
-                    </p>
-                  ) : (
-                    <div className="space-y-2 max-h-60 overflow-y-auto">
-                      {currentClass.selectedStudents.map((student) => (
-                        <div key={student.id} className="p-2 bg-academy-lightBlue/10 rounded-md">
+                  <div className="space-y-3 max-h-60 overflow-y-auto">
+                    {currentClass.selectedStudents.map((student) => (
+                      <div key={student.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                        <div>
                           <div className="font-medium">{student.name}</div>
                           <div className="text-sm text-muted-foreground">{student.email}</div>
                         </div>
-                      ))}
-                    </div>
-                  )
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
+                        <Badge className="bg-green-500">Selected</Badge>
+                      </div>
+                    ))}
+                  </div>
+                )
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Opportunity Manager Dialog */}
+      {showOpportunityManager && (
+        <Dialog open={showOpportunityManager} onOpenChange={setShowOpportunityManager}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Manage Bidding Opportunities</DialogTitle>
+              <DialogDescription>
+                Create and manage bidding opportunities for {currentClass.className}
+              </DialogDescription>
+            </DialogHeader>
+            <BidOpportunityManager
+              currentClass={currentClass}
+              onOpportunityCreated={(opportunity) => {
+                onOpportunityCreated?.(opportunity);
+                setShowOpportunityManager(false);
+              }}
+              onOpportunityDeleted={onOpportunityDeleted || (() => {})}
+              onEditOpportunity={handleEditOpportunity}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Edit Bid Opportunity Dialog */}
       {editingOpportunity && (
